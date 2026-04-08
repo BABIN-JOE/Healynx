@@ -1,0 +1,9 @@
+venv/
+__pycache__/
+*.pyc
+
+.env
+*.pem
+*_oneline.txt
+
+alembic/versions/*.pyc

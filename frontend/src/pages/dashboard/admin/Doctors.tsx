@@ -1,0 +1,364 @@
+// src/pages/dashboard/admin/Doctors.tsx
+
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+
+import AdminService from "../../../services/AdminService";
+import { toast } from "sonner";
+
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../../../components/ui/table";
+
+import { Button } from "../../../components/ui/button";
+import { Input } from "../../../components/ui/input";
+import { Badge } from "../../../components/ui/badge";
+
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "../../../components/ui/dialog";
+
+import {
+  EyeIcon,
+  TrashIcon,
+  LockIcon,
+  UnlockIcon,
+  EditIcon,
+  SearchIcon,
+} from "../../../components/Icons";
+
+export default function Doctors() {
+  const navigate = useNavigate();
+
+  const [doctors, setDoctors] = useState<any[]>([]);
+  const [requests, setRequests] = useState<any[]>([]);
+  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  const [showBlocked, setShowBlocked] = useState(false);
+  const [openRequests, setOpenRequests] = useState(false);
+
+  const PAGE_SIZE = 10;
+  const [page, setPage] = useState(1);
+
+  /* ===========================================================
+       FETCH DOCTORS (APPROVED + BLOCKED)
+  =========================================================== */
+  const loadDoctors = async (active = true) => {
+    try {
+      setLoading(true);
+
+      const res: any = await AdminService.getDoctors(active, 1, 300);
+
+      console.log("DOCTORS:", res);
+
+      setDoctors(res || []);
+
+    } catch (err) {
+      toast.error("Failed to load doctors");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /* ===========================================================
+       FETCH DOCTOR REQUESTS
+  =========================================================== */
+  const loadRequests = async () => {
+    try {
+      const res = await AdminService.getDoctorRequests("pending");
+
+      setRequests(res || []);
+    } catch (err) {
+      toast.error("Failed to load doctor requests");
+    }
+  };
+
+  /* ===========================================================
+       INITIAL LOAD
+  =========================================================== */
+  useEffect(() => {
+    loadDoctors(!showBlocked);
+  }, [showBlocked]);
+
+  /* ===========================================================
+       FILTER + PAGINATION
+  =========================================================== */
+  const filtered = doctors.filter((d) =>
+    (d.name || "").toLowerCase().includes(search.toLowerCase())
+  );
+
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+
+  /* ===========================================================
+       ACTION HANDLERS
+  =========================================================== */
+  const handleDelete = async (id: string) => {
+    if (!confirm("Delete this doctor?")) return;
+
+    try {
+      await AdminService.deleteDoctor(id);
+      toast.success("Doctor deleted");
+      loadDoctors(!showBlocked);
+    } catch {
+      toast.error("Delete failed");
+    }
+  };
+
+  const toggleBlock = async (id: string, isActive: boolean) => {
+    try {
+      if (isActive) {
+        await AdminService.blockDoctor(id);
+        toast.success("Doctor blocked");
+      } else {
+        await AdminService.unblockDoctor(id);
+        toast.success("Doctor unblocked");
+      }
+
+      loadDoctors(!showBlocked);
+    } catch {
+      toast.error("Action failed");
+    }
+  };
+
+  const handleApprove = async (id: string) => {
+    try {
+      await AdminService.approveDoctor(id);
+      toast.success("Doctor approved");
+
+      loadDoctors(!showBlocked);
+      loadRequests();
+    } catch {
+      toast.error("Approve failed");
+    }
+  };
+
+  const handleReject = async (id: string) => {
+    try {
+      await AdminService.rejectDoctor(id);
+      toast.success("Doctor rejected");
+
+      loadRequests();
+    } catch {
+      toast.error("Reject failed");
+    }
+  };
+
+  /* ===========================================================
+       JSX
+  =========================================================== */
+
+  return (
+    <>
+    
+      {/* HEADER */}
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-bold">Doctors</h1>
+
+        <div className="flex gap-2">
+          <Button
+            onClick={() => {
+              loadRequests();
+              setOpenRequests(true);
+            }}
+          >
+            Doctor Requests
+          </Button>
+
+          <Button
+            variant={showBlocked ? "default" : "secondary"}
+            onClick={() => setShowBlocked(!showBlocked)}
+          >
+            {showBlocked ? "Show Active" : "Blocked Doctors"}
+          </Button>
+        </div>
+      </div>
+
+      {/* SEARCH */}
+      <div className="flex gap-3 mb-5">
+        <Input
+          placeholder="Search doctor..."
+          value={search}
+          className="w-72"
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <Button>
+          <SearchIcon className="mr-2" /> Search
+        </Button>
+      </div>
+
+      {/* TABLE */}
+      {loading ? (
+        <p>Loading...</p>
+      ) : paginated.length === 0 ? (
+        <p>No doctors found.</p>
+      ) : (
+        <div className="bg-white shadow rounded-md overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[25%]">Name</TableHead>
+                <TableHead className="w-[15%]">License</TableHead>
+                <TableHead className="w-[20%]">Specialization</TableHead>
+                <TableHead className="w-[10%] text-center">Status</TableHead>
+                <TableHead className="w-[30%] text-center">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+
+            <TableBody>
+              {paginated.map((d) => (
+                <TableRow key={d.id} className="border-t">
+
+                  <TableCell className="py-3">{d.name}</TableCell>
+
+                  <TableCell className="py-3">{d.license_number}</TableCell>
+
+                  <TableCell className="py-3">{d.specialization || "—"}</TableCell>
+
+                  <TableCell className="py-3 text-center">
+                    {d.is_active ? (
+                      <span className="px-2 py-1 rounded bg-green-200 text-green-700 text-xs font-semibold">
+                        Active
+                      </span>
+                    ) : (
+                      <span className="px-2 py-1 rounded bg-red-200 text-red-700 text-xs font-semibold">
+                        Blocked
+                      </span>
+                    )}
+                  </TableCell>
+
+                  <TableCell className="py-3">
+                    <div className="flex justify-center gap-3">
+
+                      {/* VIEW */}
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => navigate(`/admin/doctors/${d.id}/view`)}
+                      >
+                        <EyeIcon className="h-4 w-4" />
+                      </Button>
+
+                      {/* EDIT */}
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => navigate(`/admin/doctors/${d.id}/edit`)}
+                      >
+                        <EditIcon className="h-4 w-4" />
+                      </Button>
+
+                      {/* BLOCK / UNBLOCK */}
+                      {d.is_active ? (
+                        <Button
+                          size="icon"
+                          className="bg-red-500 hover:bg-red-600"
+                          onClick={() => AdminService.blockDoctor(d.id).then(() => loadDoctors())}
+                        >
+                          <LockIcon className="h-4 w-4" />
+                        </Button>
+                      ) : (
+                        <Button
+                          size="icon"
+                          className="bg-green-500 hover:bg-green-600"
+                          onClick={() => AdminService.unblockDoctor(d.id).then(() => loadDoctors())}
+                        >
+                          <UnlockIcon className="h-4 w-4" />
+                        </Button>
+                      )}
+
+                      {/* DELETE */}
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        onClick={async () => {
+                          if (!confirm("Delete doctor?")) return;
+                          await AdminService.deleteDoctor(d.id);
+                          toast.success("Deleted");
+                          loadDoctors();
+                        }}
+                      >
+                        <TrashIcon className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+
+      {/* PAGINATION */}
+      <div className="flex items-center justify-center gap-4 mt-6">
+        <Button disabled={page <= 1} onClick={() => setPage(page - 1)}>
+          Prev
+        </Button>
+
+        <span>
+          Page {page} of {totalPages}
+        </span>
+
+        <Button disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
+          Next
+        </Button>
+      </div>
+
+      {/* REQUESTS MODAL */}
+      <Dialog open={openRequests} onOpenChange={setOpenRequests}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Doctor Requests</DialogTitle>
+          </DialogHeader>
+
+          {requests.length === 0 ? (
+            <p className="mt-3 text-gray-500">No pending requests</p>
+          ) : (
+            <div className="mt-4 space-y-4">
+              {requests.map((r) => (
+                <div key={r.id} className="border p-4 rounded-md">
+                  <p className="font-semibold">{r.full_name}</p>
+                  <p className="text-sm text-gray-600">
+                    License: {r.license_number}
+                  </p>
+
+                  <div className="flex gap-2 mt-3">
+                    <Button size="sm" onClick={() => handleApprove(r.id)}>
+                      Approve
+                    </Button>
+
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => handleReject(r.id)}
+                    >
+                      Reject
+                    </Button>
+
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => navigate(`/admin/doctor-requests/${r.id}/view`)}
+                    >
+                      View
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}

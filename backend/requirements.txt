@@ -1,0 +1,16 @@
+fastapi
+uvicorn[standard]
+sqlmodel
+sqlalchemy
+psycopg2-binary
+python-multipart
+cryptography
+argon2-cffi
+pyjwt
+python-dotenv
+minio==7.2.5
+redis
+pydantic
+pydantic[email]
+alembic
+requests
