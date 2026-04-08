@@ -53,7 +53,7 @@ FRONTEND_URL = os.getenv("FRONTEND_URL", "*")
 # -------------------------------------------------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[FRONTEND_URL] if FRONTEND_URL != "*" else ["*"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=[
@@ -140,7 +140,15 @@ VALIDATION_RULES = {
 async def validation_middleware(request: Request, call_next):
 
     if request.method == "OPTIONS":
-        return await call_next(request)
+        return JSONResponse(
+            status_code=200,
+            content={"message": "OK"},
+            headers={
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+                "Access-Control-Allow-Headers": "Authorization, Content-Type",
+            },
+        )
 
     method = request.method
     path = request.url.path
