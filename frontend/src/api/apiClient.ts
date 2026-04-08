@@ -77,7 +77,7 @@ api.interceptors.response.use(
     }
 
     // ❌ DO NOT refresh if no refresh token exists
-    const hasRefreshToken = document.cookie.includes("refresh_token=");
+    const hasRefreshToken = true;
     if (!hasRefreshToken) {
       return Promise.reject(error);
     }

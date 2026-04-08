@@ -72,10 +72,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     role: "master" | "admin" | "hospital" | "doctor",
     credentials: any
   ) => {
-    try {
-      await api.post("/api/v1/auth/logout", {}, { withCredentials: true });
-    } catch {}
-
     const endpointMap = {
       master: "/api/v1/auth/master/login",
       admin: "/api/v1/auth/admin/login",
@@ -87,19 +83,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       withCredentials: true,
     });
 
-    try {
-      const res = await api.get("/api/v1/auth/me", {
-        withCredentials: true,
-      });
+    const res = await api.get("/api/v1/auth/me", {
+      withCredentials: true,
+    });
 
-      setUser(res.data);
-      setRole(res.data.role);
-    } catch (err) {
-      console.error("ME FAILED AFTER LOGIN", err);
-      setUser(null);
-      setRole(null);
-    }
-
+    setUser(res.data);
+    setRole(res.data.role);
     setLoading(false);
   };
 
@@ -121,7 +110,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const handleTabClose = () => {
       navigator.sendBeacon(
-        "http://127.0.0.1:8000/api/v1/auth/logout"
+        "https://healynx.onrender.com/api/v1/auth/logout"
       );
     };
 
