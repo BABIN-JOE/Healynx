@@ -3,7 +3,7 @@
 import axios from "axios";
 
 const API_BASE =
-  (import.meta as any).env?.VITE_API_BASE || "http://127.0.0.1:8000";
+  (import.meta as any).env?.VITE_API_BASE || "https://healynx.onrender.com";
 
 const api = axios.create({
   baseURL: API_BASE,
