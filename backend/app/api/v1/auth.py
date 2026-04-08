@@ -56,7 +56,8 @@ def set_auth_cookie(response: Response, role: str, token: str):
         httponly=True,
         secure=COOKIE_SECURE,
         samesite="Strict",
-        path="/"
+        path="/",
+        domain=None
     )
 
 
@@ -67,7 +68,8 @@ def set_refresh_cookie(response: Response, token: str):
         httponly=True,
         secure=COOKIE_SECURE,
         samesite="Strict",
-        path="/"
+        path="/",
+        domain=None
     )
 
 
@@ -78,7 +80,8 @@ def set_csrf_cookie(response: Response, csrf_token: str):
         httponly=False,
         secure=COOKIE_SECURE,
         samesite="Strict",
-        path="/"
+        path="/",
+        domain=None
     )
 
 

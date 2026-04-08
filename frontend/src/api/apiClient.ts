@@ -6,7 +6,7 @@ const API_BASE =
   (import.meta as any).env?.VITE_API_BASE || "https://healynx.onrender.com";
 
 const api = axios.create({
-  baseURL: API_BASE,
+  baseURL: "https://healynx.onrender.com",
   headers: {
     "Content-Type": "application/json",
   },
