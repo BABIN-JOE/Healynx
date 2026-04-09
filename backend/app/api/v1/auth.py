@@ -309,9 +309,12 @@ def refresh(request: Request, response: Response, db = Depends(get_db)):
 
     # 🔐 new access token
     payload = {
-        "role": stored.role,
-        "session_id": session.id,
-        "jti": str(uuid4())
+        "role": session.role,
+        "session_id": str(session.id),
+        "admin_id": str(session.admin_id) if session.admin_id else None,
+        "master_id": str(session.master_id) if session.master_id else None,
+        "doctor_id": str(session.doctor_id) if session.doctor_id else None,
+        "hospital_id": str(session.hospital_id) if session.hospital_id else None,
     }
 
     if stored.role == "master":
