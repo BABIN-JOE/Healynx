@@ -3,6 +3,7 @@
 from fastapi import Request, HTTPException, Depends, status
 from typing import List, Optional
 from sqlmodel import Session
+from urllib.parse import unquote
 
 from app.deps import get_db
 from app.core import jwt_utils
@@ -115,64 +116,42 @@ def require_role(allowed_roles: List[Role]):
 # ---------------------------------------------------
 # 🔐 CSRF PROTECTION
 # ---------------------------------------------------
-def verify_csrf(request: Request, db: Session) -> None:
+def verify_csrf(
+    request: Request,
+    db: Session = Depends(get_db)
+):
     """
-    Validates CSRF token using:
-    1. Cookie token
-    2. Header token
-    3. Token stored in the database session
+    Verifies CSRF token using the double-submit cookie pattern.
     """
 
+    # Retrieve tokens
     cookie_token = request.cookies.get("csrf_token")
     header_token = request.headers.get("X-CSRF-Token")
 
-    if DEBUG_AUTH:
-        print("CSRF COOKIE:", cookie_token)
-        print("CSRF HEADER:", header_token)
+    # Decode tokens (important for URL-safe tokens)
+    if cookie_token:
+        cookie_token = unquote(cookie_token)
 
-    # ❌ Missing tokens
+    if header_token:
+        header_token = unquote(header_token)
+
+    # Validate presence
     if not cookie_token or not header_token:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="CSRF missing",
-        )
+        raise HTTPException(status_code=403, detail="CSRF missing")
 
-    # ❌ Cookie/Header mismatch
+    # Validate equality between cookie and header
     if cookie_token != header_token:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="CSRF mismatch",
-        )
+        raise HTTPException(status_code=403, detail="CSRF invalid")
 
-    # Validate JWT and session
+    # Validate session-bound CSRF token
     payload = get_jwt_payload(request, db)
-    session_id = payload.get("session_id")
-
-    if not session_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Invalid session",
-        )
-
-    session = session_crud.get_session(db, session_id)
+    session = session_crud.get_session(db, payload.get("session_id"))
 
     if not session:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Session not found",
-        )
+        raise HTTPException(status_code=403, detail="Invalid session")
 
-    # ❌ Database token mismatch
     if session.csrf_token != cookie_token:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="CSRF invalid",
-        )
-
-    if DEBUG_AUTH:
-        print("CSRF validation successful")
-
-
+        raise HTTPException(status_code=403, detail="CSRF mismatch")
 # ---------------------------------------------------
 # 🔐 CURRENT USER
 # ---------------------------------------------------
