@@ -7,6 +7,7 @@ from app.deps_auth import require_role, verify_csrf
 from app.core.rbac import Role
 from app.db import crud
 from app.core.audit import log_action
+from app.core.auth_utils import extract_user_id
 
 router = APIRouter()
 
@@ -47,7 +48,7 @@ def approve_doctor(
         db,
         action_type="admin.approve_doctor",
         user_role="admin",
-        user_id=payload["user_id"],
+        user_id=extract_user_id(payload),
         target_entity="doctors",
         target_entity_id=doctor.id,
         ip=request.client.host if request else None
