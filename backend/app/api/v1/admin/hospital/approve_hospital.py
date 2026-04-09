@@ -2,7 +2,6 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlmodel import Session
 
 from app.deps import get_db
-from app.core.rbac import require_role, Role
 from app.deps_auth import require_role, verify_csrf
 from app.core.rbac import Role
 from app.db import crud
@@ -11,40 +10,55 @@ from app.core.auth_utils import extract_user_id
 
 router = APIRouter()
 
+
 @router.post("/hospital-requests/{req_id}/approve")
 def approve_hospital(
     req_id: str,
+    request: Request,
     payload=Depends(require_role([Role.ADMIN])),
-    db = Depends(get_db),
-    request: Request = None
+    db: Session = Depends(get_db),
 ):
-    verify_csrf(request, db) 
+    # CSRF validation
+    verify_csrf(request, db)
+
     req = crud.get_hospital_request(db, req_id)
     if not req:
-        raise HTTPException(404, "Hospital request not found")
+        raise HTTPException(status_code=404, detail="Hospital request not found")
 
     if req.status == "approved":
-        raise HTTPException(400, "Hospital request already approved")
+        raise HTTPException(status_code=400, detail="Hospital request already approved")
+
     if req.status == "rejected":
-        raise HTTPException(400, "Hospital request already rejected — create a new request to re-submit")
+        raise HTTPException(
+            status_code=400,
+            detail="Hospital request already rejected — create a new request to re-submit"
+        )
+
     if req.status != "pending":
-        raise HTTPException(400, "Invalid request status for approval")
+        raise HTTPException(status_code=400, detail="Invalid request status for approval")
+
+    admin_id = extract_user_id(payload)
 
     hospital = crud.approve_hospital_request(
-        db, req_id, approved_by_admin_id=payload["user_id"]
+        db,
+        req_id,
+        approved_by_admin_id=admin_id,
     )
 
     if not hospital:
-        raise HTTPException(500, "Failed to approve hospital request")
+        raise HTTPException(status_code=500, detail="Failed to approve hospital request")
 
     log_action(
         db,
         action_type="admin.approve_hospital",
         user_role="admin",
-        user_id=extract_user_id(payload),
+        user_id=admin_id,
         target_entity="hospitals",
-        target_entity_id=hospital.id,
-        ip=request.client.host if request else None
+        target_entity_id=str(hospital.id),
+        ip=request.client.host if request else None,
     )
 
-    return {"hospital_id": str(hospital.id)}
+    return {
+        "message": "Hospital approved successfully",
+        "hospital_id": str(hospital.id),
+    }
