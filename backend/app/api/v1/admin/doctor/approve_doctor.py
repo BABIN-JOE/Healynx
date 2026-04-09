@@ -38,7 +38,7 @@ def approve_doctor(
         )
 
     doctor = crud.approve_doctor_request(
-        db, req_id, approved_by_admin_id=payload["user_id"]
+        db, req_id, approved_by_admin_id=extract_user_id(payload)
     )
 
     if not doctor:
