@@ -1,100 +1,127 @@
-// src/api/apiClient.ts
+import axios, {
+  AxiosError,
+  AxiosHeaders,
+  InternalAxiosRequestConfig,
+} from "axios";
 
-import axios from "axios";
-
+// ------------------------------------------------------
+// 🌐 API BASE URL
+// ------------------------------------------------------
 const API_BASE =
-  (import.meta as any).env?.VITE_API_BASE || "https://healynx.onrender.com";
+  (import.meta as any).env?.VITE_API_BASE ||
+  "https://healynx.onrender.com";
 
+// ------------------------------------------------------
+// 🚀 AXIOS INSTANCE
+// ------------------------------------------------------
 const api = axios.create({
-  baseURL: "https://healynx.onrender.com",
+  baseURL: API_BASE,
   headers: {
     "Content-Type": "application/json",
   },
   timeout: 15000,
-  withCredentials: true,
+  withCredentials: true, // Required for cookie-based authentication
 });
 
 // ------------------------------------------------------
 // 🍪 COOKIE HELPER
 // ------------------------------------------------------
-function getCookie(name: string) {
-  return document.cookie
-    .split("; ")
-    .find((row) => row.startsWith(name + "="))
-    ?.split("=")[1];
+function getCookie(name: string): string | null {
+  const cookies = document.cookie.split("; ");
+  for (const cookie of cookies) {
+    const [key, value] = cookie.split("=");
+    if (key === name) {
+      return decodeURIComponent(value);
+    }
+  }
+  return null;
 }
 
 // ------------------------------------------------------
-// 🔐 CSRF INTERCEPTOR (FIXED)
+// 🔐 CSRF INTERCEPTOR
 // ------------------------------------------------------
-api.interceptors.request.use((config) => {
-  const method = config.method?.toUpperCase();
+api.interceptors.request.use(
+  (config: InternalAxiosRequestConfig): InternalAxiosRequestConfig => {
+    const method = config.method?.toUpperCase();
 
-  // ✅ Only for state-changing requests
-  const shouldAttachCSRF =
-    method === "POST" ||
-    method === "PUT" ||
-    method === "PATCH" ||
-    method === "DELETE";
+    // Attach CSRF token only for state-changing requests
+    if (method && ["POST", "PUT", "PATCH", "DELETE"].includes(method)) {
+      const csrfToken = getCookie("csrf_token");
 
-  if (shouldAttachCSRF) {
-    const csrf = getCookie("csrf_token");
+      if (csrfToken) {
+        if (!config.headers) {
+          config.headers = new AxiosHeaders();
+        }
 
-    if (csrf && config.headers) {
-      config.headers.set("X-CSRF-Token", csrf);
+        if (config.headers instanceof AxiosHeaders) {
+          config.headers.set("X-CSRF-Token", csrfToken);
+        } else {
+          (config.headers as Record<string, string>)["X-CSRF-Token"] =
+            csrfToken;
+        }
+      }
     }
-  }
 
-  return config;
-});
+    return config;
+  },
+  (error: AxiosError) => Promise.reject(error)
+);
 
 // ------------------------------------------------------
-// 🔁 REFRESH SYSTEM (QUEUE-BASED)
+// 🔁 TOKEN REFRESH SYSTEM (QUEUE-BASED)
 // ------------------------------------------------------
-
 let isRefreshing = false;
-let failedQueue: any[] = [];
+let failedQueue: {
+  resolve: (value?: unknown) => void;
+  reject: (reason?: any) => void;
+}[] = [];
 
 const processQueue = (error: any = null) => {
-  failedQueue.forEach((prom) => {
+  failedQueue.forEach((promise) => {
     if (error) {
-      prom.reject(error);
+      promise.reject(error);
     } else {
-      prom.resolve();
+      promise.resolve(null);
     }
   });
   failedQueue = [];
 };
 
 api.interceptors.response.use(
-  (res) => res,
-  async (error) => {
-    const originalRequest = error.config;
+  (response) => response,
+  async (error: AxiosError) => {
+    const originalRequest: any = error.config;
 
-    // ❌ Ignore non-401
-    if (error.response?.status !== 401) {
+    if (!error.response) {
       return Promise.reject(error);
     }
 
-    // ❌ DO NOT refresh if no refresh token exists
-    const hasRefreshToken = document.cookie.includes("refresh_token=");
-    if (!hasRefreshToken) {
+    const status = error.response.status;
+    const url = originalRequest?.url || "";
+
+    // Skip refresh for specific endpoints
+    const skipRefresh =
+      url.includes("/auth/login") ||
+      url.includes("/auth/master/login") ||
+      url.includes("/auth/admin/login") ||
+      url.includes("/auth/hospital/login") ||
+      url.includes("/auth/doctor/login") ||
+      url.includes("/auth/refresh") ||
+      url.includes("/auth/logout") ||
+      url.includes("/auth/me");
+
+    if (status !== 401 || skipRefresh) {
       return Promise.reject(error);
     }
 
-    // ❌ Prevent retry loop
+    // Prevent infinite retry loops
     if (originalRequest._retry) {
-      return Promise.reject(error);
-    }
-
-    // ❌ Don't intercept refresh itself
-    if (originalRequest.url?.includes("/auth/refresh")) {
       return Promise.reject(error);
     }
 
     originalRequest._retry = true;
 
-    // 🔁 Queue handling
+    // Queue requests during token refresh
     if (isRefreshing) {
       return new Promise((resolve, reject) => {
         failedQueue.push({
@@ -110,18 +137,16 @@ api.interceptors.response.use(
       await api.post("/api/v1/auth/refresh", {}, { withCredentials: true });
 
       processQueue();
-
       return api(originalRequest);
+    } catch (refreshError) {
+      processQueue(refreshError);
+      console.error("Session expired. Redirecting to login.");
 
-    } catch (err) {
-      processQueue(err);
+      if (typeof window !== "undefined") {
+        window.location.href = "/";
+      }
 
-      console.error("AUTH FAILED → redirecting");
-
-      window.location.href = "/";
-
-      return Promise.reject(err);
-
+      return Promise.reject(refreshError);
     } finally {
       isRefreshing = false;
     }
