@@ -47,9 +47,16 @@ def add_patient(
         ),
         aadhaar_encrypted=aadhaar_enc,
         aadhaar_hash=aadhaar_hash,
-        created_by=payload["user_id"],
+        created_by=(
+            payload.get("user_id")
+            or payload.get("admin_id")
+            or payload.get("master_id")
+            or payload.get("doctor_id")
+            or payload.get("hospital_id")
+        ),
         blood_group=body.blood_group,
     )
+
     if body.phone == body.emergency_contact:
         raise HTTPException(
             status_code=400,

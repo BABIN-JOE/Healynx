@@ -15,7 +15,7 @@ def list_doctors(
     page: int = Query(1, ge=1),
     limit: int = Query(10, ge=1, le=300),
     db = Depends(get_db),
-    payload=Depends(require_role([Role.ADMIN])),
+    payload=Depends(require_role([Role.ADMIN, Role.MASTER]))
 ):
     offset = (page - 1) * limit
 
