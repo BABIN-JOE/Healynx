@@ -121,6 +121,9 @@ def issue_tokens(response, db, payload, role, user_ids, request: Request):
     set_refresh_cookie(response, refresh_token)
     set_csrf_cookie(response, csrf_token)
 
+    # ✅ Expose CSRF token to frontend
+    response.headers["X-CSRF-Token"] = csrf_token
+
 
 # ---------------------------------------------------------
 # /me

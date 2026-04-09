@@ -61,6 +61,7 @@ app.add_middleware(
         "Authorization",
         "X-CSRF-Token",
     ],
+    expose_headers=["X-CSRF-Token"],
 )
 
 # -------------------------------------------------------

@@ -12,6 +12,11 @@ const API_BASE =
   "https://healynx.onrender.com";
 
 // ------------------------------------------------------
+// 🔐 CSRF TOKEN STORAGE (IN-MEMORY)
+// ------------------------------------------------------
+let csrfToken: string | null = null;
+
+// ------------------------------------------------------
 // 🚀 AXIOS INSTANCE
 // ------------------------------------------------------
 const api = axios.create({
@@ -24,41 +29,27 @@ const api = axios.create({
 });
 
 // ------------------------------------------------------
-// 🍪 COOKIE HELPER
-// ------------------------------------------------------
-function getCookie(name: string): string | null {
-  const cookies = document.cookie.split("; ");
-  for (const cookie of cookies) {
-    const [key, value] = cookie.split("=");
-    if (key === name) {
-      return decodeURIComponent(value);
-    }
-  }
-  return null;
-}
-
-// ------------------------------------------------------
-// 🔐 CSRF INTERCEPTOR
+// 🔐 REQUEST INTERCEPTOR (ATTACH CSRF TOKEN)
 // ------------------------------------------------------
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig): InternalAxiosRequestConfig => {
     const method = config.method?.toUpperCase();
 
-    // Attach CSRF token only for state-changing requests
-    if (method && ["POST", "PUT", "PATCH", "DELETE"].includes(method)) {
-      const csrfToken = getCookie("csrf_token");
+    // Attach CSRF token for state-changing requests
+    if (
+      csrfToken &&
+      method &&
+      ["POST", "PUT", "PATCH", "DELETE"].includes(method)
+    ) {
+      if (!config.headers) {
+        config.headers = new AxiosHeaders();
+      }
 
-      if (csrfToken) {
-        if (!config.headers) {
-          config.headers = new AxiosHeaders();
-        }
-
-        if (config.headers instanceof AxiosHeaders) {
-          config.headers.set("X-CSRF-Token", csrfToken);
-        } else {
-          (config.headers as Record<string, string>)["X-CSRF-Token"] =
-            csrfToken;
-        }
+      if (config.headers instanceof AxiosHeaders) {
+        config.headers.set("X-CSRF-Token", csrfToken);
+      } else {
+        (config.headers as Record<string, string>)["X-CSRF-Token"] =
+          csrfToken;
       }
     }
 
@@ -68,7 +59,7 @@ api.interceptors.request.use(
 );
 
 // ------------------------------------------------------
-// 🔁 TOKEN REFRESH SYSTEM (QUEUE-BASED)
+// 🔁 TOKEN REFRESH QUEUE SYSTEM
 // ------------------------------------------------------
 let isRefreshing = false;
 let failedQueue: {
@@ -87,8 +78,18 @@ const processQueue = (error: any = null) => {
   failedQueue = [];
 };
 
+// ------------------------------------------------------
+// 📥 RESPONSE INTERCEPTOR
+// ------------------------------------------------------
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Capture CSRF token from response headers
+    const token = response.headers["x-csrf-token"];
+    if (token) {
+      csrfToken = token;
+    }
+    return response;
+  },
   async (error: AxiosError) => {
     const originalRequest: any = error.config;
 
@@ -99,7 +100,7 @@ api.interceptors.response.use(
     const status = error.response.status;
     const url = originalRequest?.url || "";
 
-    // Skip refresh for specific endpoints
+    // Skip refresh for authentication-related endpoints
     const skipRefresh =
       url.includes("/auth/login") ||
       url.includes("/auth/master/login") ||
@@ -121,7 +122,7 @@ api.interceptors.response.use(
 
     originalRequest._retry = true;
 
-    // Queue requests during token refresh
+    // Queue requests while refreshing
     if (isRefreshing) {
       return new Promise((resolve, reject) => {
         failedQueue.push({
@@ -134,7 +135,11 @@ api.interceptors.response.use(
     isRefreshing = true;
 
     try {
-      await api.post("/api/v1/auth/refresh", {}, { withCredentials: true });
+      await api.post(
+        "/api/v1/auth/refresh",
+        {},
+        { withCredentials: true }
+      );
 
       processQueue();
       return api(originalRequest);
