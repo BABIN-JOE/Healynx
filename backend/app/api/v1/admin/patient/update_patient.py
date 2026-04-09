@@ -10,6 +10,7 @@ from app.core.rbac import Role
 from app.db.models import Patient
 from app.core import crypto
 from app.core.audit import log_action
+from app.core.auth_utils import extract_user_id
 
 router = APIRouter()
 
@@ -104,7 +105,7 @@ def update_patient(
         db,
         action_type="admin.update_patient",
         user_role="admin",
-        user_id=payload["user_id"],
+        user_id=extract_user_id(payload),
         target_entity="patient",
         target_entity_id=patient.id,
         ip=request.client.host if request else None,
