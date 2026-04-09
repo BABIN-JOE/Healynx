@@ -72,9 +72,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     role: "master" | "admin" | "hospital" | "doctor",
     credentials: any
   ) => {
-    try {
-      await api.post("/api/v1/auth/logout", {}, { withCredentials: true });
-    } catch {}
 
     const endpointMap = {
       master: "/api/v1/auth/master/login",
