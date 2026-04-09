@@ -121,7 +121,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const handleTabClose = () => {
       navigator.sendBeacon(
-        "http://127.0.0.1:8000/api/v1/auth/logout"
+        "http://healynx.onrender.com/api/v1/auth/logout"
       );
     };
 
