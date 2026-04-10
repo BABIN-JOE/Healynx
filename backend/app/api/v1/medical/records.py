@@ -1,7 +1,8 @@
 from app.core.time import *
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Body
 from sqlmodel import Session, select
 from datetime import datetime, timedelta
+from pydantic import BaseModel
 from uuid import UUID
 
 from app.deps import get_db
@@ -741,13 +742,17 @@ def get_previous_conditions(
 from app.services.ai.ai_service import ask_ai
 from app.services.ai.context_builder import build_patient_context
 
+class AIRequest(BaseModel):
+    question: str
+
+
 @router.post("/ask-ai/{patient_id}")
 def ask_ai_route(
     patient_id: str,
-    payload: dict,
+    request: AIRequest = Body(...),
     db: Session = Depends(get_db)
 ):
-    question = payload.get("question")
+    question = request.question
 
     from app.db.crud.medical.history import (
         visit,
@@ -755,7 +760,7 @@ def ask_ai_route(
         surgery,
         lab,
         immunization,
-        long_term_condition
+        long_term_condition,
     )
 
     data = {
@@ -767,10 +772,15 @@ def ask_ai_route(
         "conditions": long_term_condition.get_patient_long_term_conditions(db, patient_id),
     }
 
-    if not data:
-        raise HTTPException(404, "No data found")
+    # Ensure at least one dataset contains information
+    if not any(data.values()):
+        raise HTTPException(status_code=404, detail="No patient data found")
 
     context = build_patient_context(data)
     answer = ask_ai(question, context)
 
-    return {"answer": answer}
+    return {
+        "patient_id": patient_id,
+        "question": question,
+        "answer": answer
+    }
