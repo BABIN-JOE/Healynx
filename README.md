@@ -455,4 +455,4 @@ These are useful to know if you continue developing the project:
 
 ## License
 
-This Project is registered under Apache License
+This Project is registered under Apache License.
