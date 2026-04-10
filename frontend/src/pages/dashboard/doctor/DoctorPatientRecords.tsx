@@ -12,6 +12,8 @@ import AllergySection from "../../../components/medical/sections/AllergySection"
 import LabSection from "../../../components/medical/sections/LabSection";
 import LongTermDiseaseSection from "../../../components/medical/sections/LongTermDiseaseSection";
 
+import AiChat from "../../../components/medical/AiChat";
+
 export default function DoctorPatientRecords() {
 
   const navigate = useNavigate();
@@ -26,6 +28,8 @@ export default function DoctorPatientRecords() {
   const [readExpired, setReadExpired] = useState(false);
   const [writeExpired, setWriteExpired] = useState(false);
   const [remaining, setRemaining] = useState(0);
+
+  const [showAI, setShowAI] = useState(false);
 
   const loadPatient = async () => {
     if (!patientId) return;
@@ -193,10 +197,20 @@ export default function DoctorPatientRecords() {
 
       {patientDetails && (
 
+        <>
         <PatientHeader
           patient={patientDetails}
           remainingSeconds={remaining}
+          onAskAI={() => setShowAI(true)}
         />
+
+        {showAI && patientDetails && (
+            <AiChat
+              patientId={patientDetails.id}
+              onClose={() => setShowAI(false)}
+            />
+          )}
+        </>
 
       )}
 
