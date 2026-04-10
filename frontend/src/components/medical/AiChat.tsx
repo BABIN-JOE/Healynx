@@ -1,3 +1,5 @@
+//src/components/medical/AiChat.tsx
+
 import { useEffect, useRef, useState } from "react";
 
 export default function AiChat({
@@ -26,6 +28,9 @@ export default function AiChat({
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
+  const API_BASE =
+    import.meta.env.VITE_API_BASE || "https://healynx.onrender.com";
+
   const sendMessage = async (customText?: string) => {
     const text = customText || input;
     if (!text.trim()) return;
@@ -37,11 +42,21 @@ export default function AiChat({
     setLoading(true);
 
     try {
-      const res = await fetch(`/api/v1/medical/ask-ai/${patientId}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: text }),
-      });
+      const res = await fetch(
+        `${API_BASE}/api/v1/medical/ask-ai/${patientId}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include", // Required for cookie-based auth
+          body: JSON.stringify({ question: text }),
+        }
+      );
+
+      if (!res.ok) {
+        throw new Error(`HTTP error! Status: ${res.status}`);
+      }
 
       const data = await res.json();
 
@@ -53,13 +68,14 @@ export default function AiChat({
         },
       ]);
     } catch (err) {
+      console.error("AI Error:", err);
       setMessages((prev) => [
         ...prev,
         { type: "ai", text: "⚠️ Error connecting to AI service" },
       ]);
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   const quickActions = [
