@@ -19,6 +19,7 @@ router = APIRouter(prefix="/medical/access-requests", tags=["Hospital Medical"])
 def list_patient_access_requests(
     payload=Depends(require_role([Role.HOSPITAL])),
     db = Depends(get_db),
+    request: Request = None,
 ):
     hospital_id = payload["hospital_id"]
 
