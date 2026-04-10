@@ -455,4 +455,4 @@ These are useful to know if you continue developing the project:
 
 ## License
 
-No license file is currently present in the repository. Add one if you plan to distribute or open-source the project.
+This Project is registered under Apache License
