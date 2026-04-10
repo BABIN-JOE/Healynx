@@ -17,14 +17,12 @@ interface Props {
     blood_group?: string;
     emergency_contact?: string;
   };
-  expiresAt: string;
-  onAskAI?: () => void;
+  remainingSeconds: number;
 }
 
 export default function PatientHeader({
   patient,
-  expiresAt,
-  onAskAI,
+  remainingSeconds,
 }: Props) {
 
   const [open, setOpen] = useState(false);
@@ -32,10 +30,17 @@ export default function PatientHeader({
   const [bloodGroup, setBloodGroup] = useState("");
   const [phone, setPhone] = useState("");
   const [emergencyContact, setEmergencyContact] = useState("");
+  const [time, setTime] = useState<number>(remainingSeconds ?? 0);
+  const formatTime = (seconds: number) => {
+    if (!seconds || isNaN(seconds) || seconds <= 0) {
+      return "Expired";
+    }
 
-  const [minutesLeft, setMinutesLeft] = useState(0);
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
 
-  const [showAI, setShowAI] = useState(false);
+    return `${mins}m ${secs}s`;
+  };
 
   // 🔹 Sync form state when patient changes
   useEffect(() => {
@@ -44,38 +49,22 @@ export default function PatientHeader({
     setEmergencyContact(patient.emergency_contact || "");
   }, [patient]);
 
-  // 🔹 Live countdown timer for access expiry
+  // sync initial value
   useEffect(() => {
+    setTime(typeof remainingSeconds === "number" ? remainingSeconds : 0);
+  }, [remainingSeconds]);
 
-    function updateTimer() {
-
-      if (!expiresAt) {
-        setMinutesLeft(0);
-        return;
-      }
-
-      const expiry = new Date(expiresAt).getTime();
-
-      if (isNaN(expiry)) {
-        setMinutesLeft(0);
-        return;
-      }
-
-      const diff = Math.max(0, expiry - Date.now());
-
-      setMinutesLeft(
-        Math.floor(diff / 60000)
-      );
-
-    }
-
-    updateTimer();
-
-    const interval = setInterval(updateTimer, 1000);
+  // countdown
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTime((prev) => {
+        if (!prev || isNaN(prev)) return 0;
+        return Math.max(prev - 1, 0);
+      });
+    }, 1000);
 
     return () => clearInterval(interval);
-
-  }, [expiresAt]);
+  }, []);
 
   const calculateAge = (dob: string) => {
 
@@ -214,18 +203,10 @@ export default function PatientHeader({
 
         </div>
 
-        <div className="flex flex-col items-end gap-2">
-          <Badge variant="outline">
-            Access expires in {minutesLeft} min
-          </Badge>
+        <Badge variant="outline">
+          Access expires in {formatTime(time)}
+        </Badge>
 
-          <Button
-            variant="default" className="bg-indigo-600 hover:bg-indigo-700"
-            onClick={onAskAI}
-          >
-            Ask AI
-          </Button>
-        </div>
       </div>
 
       {open && (
