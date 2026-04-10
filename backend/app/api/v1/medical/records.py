@@ -734,3 +734,43 @@ def get_previous_conditions(
         }
         for c in conditions
     ]
+
+
+#AI PART
+
+from app.services.ai.ai_service import ask_ai
+from app.services.ai.context_builder import build_patient_context
+
+@router.post("/ask-ai/{patient_id}")
+def ask_ai_route(
+    patient_id: str,
+    payload: dict,
+    db: Session = Depends(get_db)
+):
+    question = payload.get("question")
+
+    from app.db.crud.medical.history import (
+        visit,
+        allergy,
+        surgery,
+        lab,
+        immunization,
+        long_term_condition
+    )
+
+    data = {
+        "visits": visit.get_patient_visits(db, patient_id),
+        "allergies": allergy.get_patient_allergies(db, patient_id),
+        "surgeries": surgery.get_patient_surgeries(db, patient_id),
+        "labs": lab.get_patient_lab_results(db, patient_id),
+        "immunizations": immunization.get_patient_immunizations(db, patient_id),
+        "conditions": long_term_condition.get_patient_long_term_conditions(db, patient_id),
+    }
+
+    if not data:
+        raise HTTPException(404, "No data found")
+
+    context = build_patient_context(data)
+    answer = ask_ai(question, context)
+
+    return {"answer": answer}
