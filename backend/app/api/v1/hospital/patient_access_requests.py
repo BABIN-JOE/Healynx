@@ -19,7 +19,6 @@ router = APIRouter(prefix="/medical/access-requests", tags=["Hospital Medical"])
 def list_patient_access_requests(
     payload=Depends(require_role([Role.HOSPITAL])),
     db = Depends(get_db),
-    request: Request = None,
 ):
     hospital_id = payload["hospital_id"]
 
@@ -93,6 +92,7 @@ def approve_patient_access_request(
     req_id: str,
     payload=Depends(require_role([Role.HOSPITAL])),
     db = Depends(get_db),
+    request: Request = None,
 ):
     verify_csrf(request, db) 
     hospital_id = payload["hospital_id"]
@@ -121,6 +121,7 @@ def decline_patient_access_request(
     req_id: str,
     payload=Depends(require_role([Role.HOSPITAL])),
     db = Depends(get_db),
+    request: Request = None,
 ):
     verify_csrf(request, db) 
     hospital_id = payload["hospital_id"]
