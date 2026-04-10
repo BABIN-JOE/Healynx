@@ -18,11 +18,13 @@ interface Props {
     emergency_contact?: string;
   };
   remainingSeconds: number;
+  onAskAI? : () => void;
 }
 
 export default function PatientHeader({
   patient,
   remainingSeconds,
+  onAskAI,
 }: Props) {
 
   const [open, setOpen] = useState(false);
@@ -203,11 +205,19 @@ export default function PatientHeader({
 
         </div>
 
-        <Badge variant="outline">
-          Access expires in {formatTime(time)}
-        </Badge>
+          <div className="flex flex-col items-end gap-2">
+            <Badge variant="outline">
+              Access expires in {formatTime(time)}
+            </Badge>
 
-      </div>
+            <Button
+              variant="default" className="bg-indigo-600 hover:bg-indigo-700"
+              onClick={onAskAI}
+            >
+              Ask AI
+            </Button>
+          </div>
+        </div>
 
       {open && (
 
