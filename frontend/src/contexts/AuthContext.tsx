@@ -1,5 +1,3 @@
-// src/contexts/AuthContext.tsx
-
 import {
   createContext,
   useContext,
@@ -15,6 +13,9 @@ import api, {
   setLogoutInProgress,
 } from "../api/apiClient";
 
+// ------------------------------------------------------
+// TYPES
+// ------------------------------------------------------
 interface AuthContextType {
   user: any | null;
   role: string | null;
@@ -36,6 +37,9 @@ const AuthContext = createContext<AuthContextType>({
 
 const INACTIVITY_LIMIT = 30 * 60 * 1000; // 30 minutes
 
+// ------------------------------------------------------
+// AUTH PROVIDER
+// ------------------------------------------------------
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<any | null>(null);
   const [role, setRole] = useState<string | null>(null);
@@ -125,7 +129,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Sync logout across tabs
       localStorage.setItem("healynx_logout", Date.now().toString());
 
-      // Reset logout flag
       setLogoutInProgress(false);
 
       if (typeof window !== "undefined") {
@@ -135,13 +138,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   // ------------------------------------------------------
-  // CROSS-TAB AUTH SYNC
+  // CROSS-TAB AUTH SYNCHRONIZATION
   // ------------------------------------------------------
   useEffect(() => {
     const handleStorageChange = (event: StorageEvent) => {
       if (event.key === "healynx_logout") {
         clearAuthState();
-        window.location.href = "/";
+        window.location.replace("/");
       }
 
       if (event.key === "healynx_login") {
@@ -157,30 +160,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // ------------------------------------------------------
-  // AUTO LOGOUT ON TAB CLOSE
+  // PREVENT MULTIPLE ROLES ON SAME DEVICE
   // ------------------------------------------------------
   useEffect(() => {
-    const handleTabClose = () => {
-      try {
-        const baseURL =
-          import.meta.env.VITE_API_BASE ||
-          "https://healynx.onrender.com";
+    if (!role) return;
 
-        navigator.sendBeacon(`${baseURL}/api/v1/auth/logout`);
-      } catch {
-        // Ignore failures
-      }
-    };
+    const activeRole = localStorage.getItem("healynx_active_role");
 
-    window.addEventListener("beforeunload", handleTabClose);
-
-    return () => {
-      window.removeEventListener("beforeunload", handleTabClose);
-    };
-  }, []);
+    if (activeRole && activeRole !== role) {
+      logout();
+    } else {
+      localStorage.setItem("healynx_active_role", role);
+    }
+  }, [role]);
 
   // ------------------------------------------------------
-  // INACTIVITY AUTO LOGOUT
+  // AUTO LOGOUT AFTER INACTIVITY
   // ------------------------------------------------------
   useEffect(() => {
     if (!user) return;
@@ -214,6 +209,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [user]);
 
+  // ------------------------------------------------------
+  // CONTEXT PROVIDER
+  // ------------------------------------------------------
   return (
     <AuthContext.Provider value={{ user, role, loading, login, logout }}>
       {children}
@@ -221,4 +219,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
+// ------------------------------------------------------
+// CUSTOM HOOK
+// ------------------------------------------------------
 export const useAuth = () => useContext(AuthContext);
