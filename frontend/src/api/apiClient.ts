@@ -32,8 +32,16 @@ export function syncCsrfTokenFromCookies() {
   csrfToken = readCookie("csrf_token");
 }
 
+export function getCsrfToken() {
+  syncCsrfTokenFromCookies();
+  return csrfToken;
+}
+
 export function clearClientAuthState() {
   csrfToken = null;
+  if (typeof document !== "undefined") {
+    document.cookie = "csrf_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+  }
 }
 
 const api = axios.create({

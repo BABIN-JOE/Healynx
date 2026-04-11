@@ -9,6 +9,7 @@ import {
 
 import api, {
   clearClientAuthState,
+  getCsrfToken,
   syncCsrfTokenFromCookies,
 } from "../api/apiClient";
 
@@ -48,6 +49,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loadSession = async () => {
     syncCsrfTokenFromCookies();
+
+    if (!getCsrfToken()) {
+      clearAuthState();
+      setLoading(false);
+      return;
+    }
 
     try {
       const res = await api.get("/api/v1/auth/me", {
