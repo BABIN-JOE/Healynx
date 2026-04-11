@@ -29,7 +29,10 @@ function readCookie(name: string): string | null {
 let csrfToken: string | null = readCookie("csrf_token");
 
 export function syncCsrfTokenFromCookies() {
-  csrfToken = readCookie("csrf_token");
+  const cookieToken = readCookie("csrf_token");
+  if (cookieToken) {
+    csrfToken = cookieToken;
+  }
 }
 
 export function getCsrfToken() {
