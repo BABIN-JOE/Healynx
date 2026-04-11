@@ -138,7 +138,6 @@ const PendingEntries: React.FC = () => {
 
       setViewEntry(entry);
       setViewOpen(true);
-      console.log("ENTRY DATA:", entry);
 
     } catch (err) {
 

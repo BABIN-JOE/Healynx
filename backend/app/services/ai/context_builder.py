@@ -1,183 +1,123 @@
-#app/services/ai/context_builder.py
+def safe(value):
+    if value is None:
+        return None
+    if isinstance(value, str):
+        value = value.strip()
+    return value or None
 
-def safe(val):
-    return val if val else None
 
-
-def format_line(label: str, value: str):
-    return f"- {label}: {value}" if value else None
+def _pick(data: dict, *keys: str):
+    for key in keys:
+        value = safe(data.get(key))
+        if value is not None:
+            return value
+    return None
 
 
 def build_patient_context(data: dict) -> str:
-    context = []
+    context: list[str] = []
 
-    # =========================
-    # ALLERGIES
-    # =========================
     allergies = data.get("allergies", [])
     context.append("Allergies:")
-
     if allergies:
-        for a in allergies:
-            allergy = safe(a.get("allergy_type"))
-            severity = safe(a.get("severity"))
-            body = safe(a.get("body_location"))
-
-            parts = []
-            if allergy:
-                parts.append(allergy)
-            if body:
-                parts.append(f"Location: {body}")
-            if severity:
-                parts.append(f"Severity: {severity}")
-
+        for allergy in allergies:
+            parts = [
+                _pick(allergy, "allergy_type"),
+                _pick(allergy, "body_location", "body_part") and f"Location: {_pick(allergy, 'body_location', 'body_part')}",
+                _pick(allergy, "severity") and f"Severity: {_pick(allergy, 'severity')}",
+            ]
+            parts = [part for part in parts if part]
             if parts:
                 context.append(f"- {', '.join(parts)}")
     else:
         context.append("- Not available in records")
 
-    # =========================
-    # SURGERIES
-    # =========================
     surgeries = data.get("surgeries", [])
     context.append("\nSurgeries:")
-
     if surgeries:
-        for s in surgeries:
-            name = safe(s.get("type") or s.get("surgery_name"))
-            admit = safe(s.get("admit_date"))
-            surgery_date = safe(s.get("surgery_date"))
-            discharge = safe(s.get("discharge_date"))
-
-            parts = []
-            if name:
-                parts.append(name)
-            if surgery_date:
-                parts.append(f"Date: {surgery_date}")
-            if admit:
-                parts.append(f"Admitted: {admit}")
-            if discharge:
-                parts.append(f"Discharged: {discharge}")
-
+        for surgery in surgeries:
+            parts = [
+                _pick(surgery, "surgery_name", "type"),
+                _pick(surgery, "surgery_date") and f"Date: {_pick(surgery, 'surgery_date')}",
+                _pick(surgery, "admit_date") and f"Admitted: {_pick(surgery, 'admit_date')}",
+                _pick(surgery, "discharge_date") and f"Discharged: {_pick(surgery, 'discharge_date')}",
+            ]
+            parts = [part for part in parts if part]
             if parts:
                 context.append(f"- {', '.join(parts)}")
     else:
         context.append("- Not available in records")
 
-    # =========================
-    # MEDICATIONS (future ready)
-    # =========================
     medications = data.get("medications", [])
     context.append("\nMedications:")
-
     if medications:
-        for m in medications:
-            name = safe(m.get("name"))
-            dose = safe(m.get("dosage"))
-            freq = safe(m.get("frequency"))
-
-            parts = []
-            if name:
-                parts.append(name)
-            if dose:
-                parts.append(f"Dose: {dose}")
-            if freq:
-                parts.append(f"Frequency: {freq}")
-
+        for medication in medications:
+            parts = [
+                _pick(medication, "name", "medication_name"),
+                _pick(medication, "dosage") and f"Dose: {_pick(medication, 'dosage')}",
+                _pick(medication, "frequency") and f"Frequency: {_pick(medication, 'frequency')}",
+            ]
+            parts = [part for part in parts if part]
             if parts:
                 context.append(f"- {', '.join(parts)}")
     else:
         context.append("- Not available in records")
 
-    # =========================
-    # IMMUNIZATIONS
-    # =========================
     immunizations = data.get("immunizations", [])
     context.append("\nImmunizations:")
-
     if immunizations:
-        for i in immunizations:
-            vaccine = safe(i.get("vaccine"))
-            date = safe(i.get("date"))
-
-            parts = []
-            if vaccine:
-                parts.append(vaccine)
-            if date:
-                parts.append(f"Date: {date}")
-
+        for immunization in immunizations:
+            parts = [
+                _pick(immunization, "vaccine_name", "vaccine"),
+                _pick(immunization, "vaccination_date", "date") and f"Date: {_pick(immunization, 'vaccination_date', 'date')}",
+                _pick(immunization, "reason") and f"Reason: {_pick(immunization, 'reason')}",
+            ]
+            parts = [part for part in parts if part]
             if parts:
                 context.append(f"- {', '.join(parts)}")
     else:
         context.append("- Not available in records")
 
-    # =========================
-    # LAB RESULTS
-    # =========================
     labs = data.get("labs", [])
     context.append("\nLab Results:")
-
     if labs:
-        for l in labs:
-            test = safe(l.get("test_name"))
-            result = safe(l.get("result"))
-            date = safe(l.get("date"))
-
-            parts = []
-            if test:
-                parts.append(test)
-            if result:
-                parts.append(f"Result: {result}")
-            if date:
-                parts.append(f"Date: {date}")
-
+        for lab in labs:
+            parts = [
+                _pick(lab, "test_name"),
+                _pick(lab, "result_text", "result") and f"Result: {_pick(lab, 'result_text', 'result')}",
+                _pick(lab, "test_date", "date") and f"Date: {_pick(lab, 'test_date', 'date')}",
+            ]
+            parts = [part for part in parts if part]
             if parts:
                 context.append(f"- {', '.join(parts)}")
     else:
         context.append("- Not available in records")
 
-    # =========================
-    # LONG TERM CONDITIONS
-    # =========================
     conditions = data.get("conditions", [])
     context.append("\nLong Term Conditions:")
-
     if conditions:
-        for c in conditions:
-            name = safe(c.get("condition"))
-            status = safe(c.get("status"))
-
-            parts = []
-            if name:
-                parts.append(name)
-            if status:
-                parts.append(f"Status: {status}")
-
+        for condition in conditions:
+            parts = [
+                _pick(condition, "condition_name", "condition"),
+                _pick(condition, "current_condition", "status") and f"Status: {_pick(condition, 'current_condition', 'status')}",
+                _pick(condition, "diagnosis") and f"Diagnosis: {_pick(condition, 'diagnosis')}",
+            ]
+            parts = [part for part in parts if part]
             if parts:
                 context.append(f"- {', '.join(parts)}")
     else:
         context.append("- Not available in records")
 
-    # =========================
-    # VISITS
-    # =========================
     visits = data.get("visits", [])
     context.append("\nRecent Visits:")
-
     if visits:
-        for v in visits:
-            reason = safe(v.get("reason"))
-            diagnosis = safe(v.get("diagnosis"))
-            date = safe(v.get("date"))
-
-            parts = []
-            if reason:
-                parts.append(reason)
-            if diagnosis:
-                parts.append(f"Diagnosis: {diagnosis}")
-            if date:
-                parts.append(f"Date: {date}")
-
+        for visit in visits:
+            parts = [
+                _pick(visit, "chief_complaint", "reason"),
+                _pick(visit, "diagnosis") and f"Diagnosis: {_pick(visit, 'diagnosis')}",
+                _pick(visit, "visit_date", "date") and f"Date: {_pick(visit, 'visit_date', 'date')}",
+            ]
+            parts = [part for part in parts if part]
             if parts:
                 context.append(f"- {', '.join(parts)}")
     else:

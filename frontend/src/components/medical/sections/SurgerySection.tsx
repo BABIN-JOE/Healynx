@@ -22,15 +22,12 @@ export default function SurgerySection({
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    console.log("ALL ENTRIES:", entries);
-
     if (readExpired) return;
 
     const surgeryOnly =
       entries?.filter((e) => e.entry_type === "surgery") || [];
 
     setSurgeries(surgeryOnly);
-    console.log("SURGERIES:", surgeries);
     setLoading(false);
 
   }, [entries, readExpired]);

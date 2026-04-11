@@ -111,7 +111,7 @@ const HospitalService = {
 
   async getPendingEntry(id: string) {
     const { data } = await apiClient.get(
-      `/api/v1/medical/entries/pending/${id}`
+      `/api/v1/hospital/medical/entries/pending/${id}`
     );
     return data;
   },
@@ -125,7 +125,7 @@ const HospitalService = {
 
   async declinePendingEntry(id: string, reason: string) {
     const { data } = await apiClient.post(
-      `/api/v1/medical/entries/pending/${id}/decline`,
+      `/api/v1/hospital/medical/entries/pending/${id}/decline`,
       { reason }
     );
     return data;
@@ -144,18 +144,17 @@ const HospitalService = {
 
   async approveProfileUpdate(id: string) {
     const { data } = await apiClient.post(
-      `/api/v1/hospital/profile-updates/${id}/approve`
+      `/api/v1/hospital/pending-profile-updates/${id}/approve`
     );
     return data;
   },
 
   async declineProfileUpdate(id: string) {
     const { data } = await apiClient.post(
-      `/api/v1/hospital/profile-updates/${id}/decline`
+      `/api/v1/hospital/pending-profile-updates/${id}/decline`
     );
     return data;
   },
 };
 
 export default HospitalService;
-  

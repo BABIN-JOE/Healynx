@@ -1,6 +1,6 @@
-//src/components/medical/AiChat.tsx
-
 import { useEffect, useRef, useState } from "react";
+
+import apiClient from "../../api/apiClient";
 
 export default function AiChat({
   patientId,
@@ -17,23 +17,19 @@ export default function AiChat({
   const inputRef = useRef<HTMLInputElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // 🔥 Slide animation trigger
   useEffect(() => {
-    setTimeout(() => setOpen(true), 10);
+    const timer = window.setTimeout(() => setOpen(true), 10);
     inputRef.current?.focus();
+    return () => window.clearTimeout(timer);
   }, []);
 
-  // 🔥 Auto scroll to bottom
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
-  const API_BASE =
-    import.meta.env.VITE_API_BASE || "https://healynx.onrender.com";
-
   const sendMessage = async (customText?: string) => {
-    const text = customText || input;
-    if (!text.trim()) return;
+    const text = (customText || input).trim();
+    if (!text) return;
 
     const userMessage = { type: "user", text };
 
@@ -42,23 +38,9 @@ export default function AiChat({
     setLoading(true);
 
     try {
-      const res = await fetch(
-        `${API_BASE}/api/v1/medical/ask-ai/${patientId}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include", // Required for cookie-based auth
-          body: JSON.stringify({ question: text }),
-        }
-      );
-
-      if (!res.ok) {
-        throw new Error(`HTTP error! Status: ${res.status}`);
-      }
-
-      const data = await res.json();
+      const { data } = await apiClient.post(`/api/v1/medical/ask-ai/${patientId}`, {
+        question: text,
+      });
 
       setMessages((prev) => [
         ...prev,
@@ -68,10 +50,10 @@ export default function AiChat({
         },
       ]);
     } catch (err) {
-      console.error("AI Error:", err);
+      console.error("AI request failed", err);
       setMessages((prev) => [
         ...prev,
-        { type: "ai", text: "⚠️ Error connecting to AI service" },
+        { type: "ai", text: "Error connecting to AI service" },
       ]);
     } finally {
       setLoading(false);
@@ -89,22 +71,19 @@ export default function AiChat({
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
-      {/* Overlay */}
       <div
         className="absolute inset-0 bg-black/30 backdrop-blur-sm"
         onClick={onClose}
       />
 
-      {/* Panel */}
       <div
-        className={`relative w-[40%] max-w-[600px] h-full bg-white shadow-2xl flex flex-col transform transition-transform duration-300 ${
+        className={`relative h-full w-[40%] max-w-[600px] transform flex-col bg-white shadow-2xl transition-transform duration-300 ${
           open ? "translate-x-0" : "translate-x-full"
-        }`}
+        } flex`}
       >
-        {/* Header */}
-        <div className="p-4 border-b flex justify-between items-center">
+        <div className="flex items-center justify-between border-b p-4">
           <div>
-            <h2 className="font-semibold text-lg">AI Clinical Assistant</h2>
+            <h2 className="text-lg font-semibold">AI Clinical Assistant</h2>
             <p className="text-xs text-gray-500">
               Ask anything about this patient
             </p>
@@ -114,52 +93,49 @@ export default function AiChat({
             onClick={onClose}
             className="text-sm text-gray-500 hover:text-black"
           >
-            ✕
+            x
           </button>
         </div>
 
-        {/* Quick Actions */}
-        <div className="p-3 border-b flex flex-wrap gap-2">
-          {quickActions.map((q, i) => (
+        <div className="flex flex-wrap gap-2 border-b p-3">
+          {quickActions.map((question) => (
             <button
-              key={i}
-              onClick={() => sendMessage(q)}
-              className="text-xs bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded-full"
+              key={question}
+              onClick={() => sendMessage(question)}
+              className="rounded-full bg-gray-100 px-3 py-1 text-xs hover:bg-gray-200"
             >
-              {q}
+              {question}
             </button>
           ))}
         </div>
 
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        <div className="flex-1 space-y-3 overflow-y-auto p-4">
           {messages.length === 0 && (
             <p className="text-sm text-gray-400">
               Ask a question to get insights about the patient...
             </p>
           )}
 
-          {messages.map((m, i) => (
+          {messages.map((message, index) => (
             <div
-              key={i}
-              className={m.type === "user" ? "text-right" : "text-left"}
+              key={`${message.type}-${index}`}
+              className={message.type === "user" ? "text-right" : "text-left"}
             >
               <div
-                className={`inline-block px-3 py-2 rounded-2xl max-w-[80%] whitespace-pre-wrap ${
-                  m.type === "user"
-                    ? "bg-indigo-600 text-white ml-auto"
+                className={`inline-block max-w-[80%] whitespace-pre-wrap rounded-2xl px-3 py-2 ${
+                  message.type === "user"
+                    ? "ml-auto bg-indigo-600 text-white"
                     : "bg-gray-100 text-gray-800"
                 }`}
               >
-                {m.text}
+                {message.text}
               </div>
             </div>
           ))}
 
-          {/* Typing indicator */}
           {loading && (
             <div className="text-left">
-              <div className="inline-block px-3 py-2 rounded-2xl bg-gray-100 text-gray-500 text-sm animate-pulse">
+              <div className="inline-block rounded-2xl bg-gray-100 px-3 py-2 text-sm text-gray-500 animate-pulse">
                 AI is analyzing...
               </div>
             </div>
@@ -168,11 +144,10 @@ export default function AiChat({
           <div ref={chatEndRef} />
         </div>
 
-        {/* Input */}
-        <div className="p-3 border-t flex gap-2">
+        <div className="flex gap-2 border-t p-3">
           <input
             ref={inputRef}
-            className="flex-1 border p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="flex-1 rounded-lg border p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             placeholder="Ask about patient..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -182,7 +157,7 @@ export default function AiChat({
           <button
             onClick={() => sendMessage()}
             disabled={loading}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 rounded-lg disabled:opacity-50"
+            className="rounded-lg bg-indigo-600 px-4 text-white hover:bg-indigo-700 disabled:opacity-50"
           >
             Send
           </button>

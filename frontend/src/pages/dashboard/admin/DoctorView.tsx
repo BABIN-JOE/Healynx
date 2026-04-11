@@ -24,7 +24,6 @@ export default function DoctorView() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log("PARAM doctorId:", doctorId);
     const load = async () => {
       try {
         const res = await AdminService.getDoctorById(doctorId!);

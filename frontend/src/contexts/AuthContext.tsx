@@ -1,13 +1,16 @@
-// src/contexts/AuthContext.tsx
-
-import React, {
+import {
   createContext,
   useContext,
   useEffect,
   useRef,
   useState,
+  type ReactNode,
 } from "react";
-import api from "../api/apiClient";
+
+import api, {
+  clearClientAuthState,
+  syncCsrfTokenFromCookies,
+} from "../api/apiClient";
 
 interface AuthContextType {
   user: any | null;
@@ -28,19 +31,24 @@ const AuthContext = createContext<AuthContextType>({
   logout: async () => {},
 });
 
-const INACTIVITY_LIMIT = 30 * 60 * 1000; // 30 minutes
+const INACTIVITY_LIMIT = 30 * 60 * 1000;
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<any | null>(null);
   const [role, setRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const inactivityTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasLoaded = useRef(false);
 
-  const inactivityTimer = useRef<any>(null);
+  const clearAuthState = () => {
+    clearClientAuthState();
+    setUser(null);
+    setRole(null);
+  };
 
-  // ------------------------------------------------------
-  // LOAD SESSION
-  // ------------------------------------------------------
   const loadSession = async () => {
+    syncCsrfTokenFromCookies();
+
     try {
       const res = await api.get("/api/v1/auth/me", {
         withCredentials: true,
@@ -49,30 +57,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(res.data);
       setRole(res.data.role);
     } catch {
-      setUser(null);
-      setRole(null);
+      clearAuthState();
     } finally {
       setLoading(false);
     }
   };
 
-  const hasLoaded = useRef(false);
-
   useEffect(() => {
     if (hasLoaded.current) return;
     hasLoaded.current = true;
-
     loadSession();
   }, []);
 
-  // ------------------------------------------------------
-  // LOGIN
-  // ------------------------------------------------------
   const login = async (
     role: "master" | "admin" | "hospital" | "doctor",
     credentials: any
   ) => {
-
     const endpointMap = {
       master: "/api/v1/auth/master/login",
       admin: "/api/v1/auth/admin/login",
@@ -84,54 +84,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       withCredentials: true,
     });
 
-    try {
-      const res = await api.get("/api/v1/auth/me", {
-        withCredentials: true,
-      });
-
-      setUser(res.data);
-      setRole(res.data.role);
-    } catch (err) {
-      console.error("ME FAILED AFTER LOGIN", err);
-      setUser(null);
-      setRole(null);
-    }
-
-    setLoading(false);
+    await loadSession();
   };
 
-  // ------------------------------------------------------
-  // LOGOUT
-  // ------------------------------------------------------
   const logout = async () => {
     try {
       await api.post("/api/v1/auth/logout", {}, { withCredentials: true });
-    } catch {}
-
-    setUser(null);
-    setRole(null);
+    } catch {
+      // Cookie cleanup still matters locally even if the server session is already gone.
+    } finally {
+      clearAuthState();
+    }
   };
 
-  // ------------------------------------------------------
-  // 🔥 AUTO LOGOUT ON TAB CLOSE
-  // ------------------------------------------------------
-  useEffect(() => {
-    const handleTabClose = () => {
-      navigator.sendBeacon(
-        "http://healynx.onrender.com/api/v1/auth/logout"
-      );
-    };
-
-    window.addEventListener("beforeunload", handleTabClose);
-
-    return () => {
-      window.removeEventListener("beforeunload", handleTabClose);
-    };
-  }, []);
-
-  // ------------------------------------------------------
-  // 🔥 INACTIVITY LOGOUT (30 MIN)
-  // ------------------------------------------------------
   useEffect(() => {
     if (!user) return;
 
@@ -141,19 +106,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       inactivityTimer.current = setTimeout(async () => {
-        console.warn("Auto logout due to inactivity");
         await logout();
         window.location.href = "/";
       }, INACTIVITY_LIMIT);
     };
 
     const events = ["mousemove", "keydown", "click", "scroll"];
-
     events.forEach((event) => {
       window.addEventListener(event, resetTimer);
     });
 
-    resetTimer(); // start timer
+    resetTimer();
 
     return () => {
       if (inactivityTimer.current) {

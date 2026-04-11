@@ -1,14 +1,16 @@
 # app/core/jwt_utils.py
 
-import jwt
-from datetime import timedelta, datetime
-from uuid import uuid4, UUID
+from datetime import datetime, timedelta
 from typing import Any, Dict
+from uuid import UUID, uuid4
+
+import jwt
 
 from app.config import settings
 from app.core.time import utcnow, ensure_utc
 
 ALGORITHM = settings.JWT_ALGORITHM
+ISSUER = settings.JWT_ISSUER
 
 
 # ---------------------------------------------------------
@@ -48,7 +50,7 @@ def create_jwt(payload: dict, minutes: int = 30) -> str:
         "exp": int((ensure_utc(now) + timedelta(minutes=minutes)).timestamp()),
         "iat": int(ensure_utc(now).timestamp()),
         "jti": str(uuid4()),
-        "iss": "healynx",
+        "iss": ISSUER,
     })
 
     return jwt.encode(p, settings.JWT_PRIVATE_KEY, algorithm=ALGORITHM)
@@ -63,7 +65,8 @@ def decode_jwt(token: str) -> dict:
             token,
             settings.JWT_PUBLIC_KEY,
             algorithms=[ALGORITHM],
-            issuer="healynx",
+            issuer=ISSUER,
+            options={"require": ["exp", "iat", "jti", "iss"]},
         )
     except jwt.ExpiredSignatureError:
         raise Exception("Token expired")

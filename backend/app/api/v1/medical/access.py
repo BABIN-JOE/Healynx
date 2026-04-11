@@ -472,7 +472,9 @@ def request_patient_update(
     changes: dict,
     payload=Depends(require_role([Role.DOCTOR])),
     db = Depends(get_db),
+    request: Request = None,
 ):
+    verify_csrf(request, db)
 
     doctor_id = payload.get("doctor_id")
 

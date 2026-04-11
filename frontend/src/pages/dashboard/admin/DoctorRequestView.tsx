@@ -17,10 +17,6 @@ export default function DoctorRequestView() {
     const load = async () => {
       try {
         const res = await AdminService.getDoctorRequestById(id!);
-
-        console.log("RAW RESPONSE:", res);
-
-        // backend already returns address as object
         setData({
           ...res,
           address: res.address || {},

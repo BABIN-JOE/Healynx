@@ -4,38 +4,52 @@ import axios, {
   InternalAxiosRequestConfig,
 } from "axios";
 
-// ------------------------------------------------------
-// 🌐 API BASE URL
-// ------------------------------------------------------
-const API_BASE =
+export const API_BASE =
   (import.meta as any).env?.VITE_API_BASE ||
   "https://healynx.onrender.com";
 
-// ------------------------------------------------------
-// 🔐 CSRF TOKEN STORAGE (IN-MEMORY)
-// ------------------------------------------------------
-let csrfToken: string | null = null;
+function readCookie(name: string): string | null {
+  if (typeof document === "undefined") {
+    return null;
+  }
 
-// ------------------------------------------------------
-// 🚀 AXIOS INSTANCE
-// ------------------------------------------------------
+  const cookie = document.cookie
+    .split(";")
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(`${name}=`));
+
+  if (!cookie) {
+    return null;
+  }
+
+  const value = cookie.slice(name.length + 1);
+  return decodeURIComponent(value);
+}
+
+let csrfToken: string | null = readCookie("csrf_token");
+
+export function syncCsrfTokenFromCookies() {
+  csrfToken = readCookie("csrf_token");
+}
+
+export function clearClientAuthState() {
+  csrfToken = null;
+}
+
 const api = axios.create({
   baseURL: API_BASE,
   headers: {
     "Content-Type": "application/json",
   },
   timeout: 15000,
-  withCredentials: true, // Required for cookie-based authentication
+  withCredentials: true,
 });
 
-// ------------------------------------------------------
-// 🔐 REQUEST INTERCEPTOR (ATTACH CSRF TOKEN)
-// ------------------------------------------------------
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig): InternalAxiosRequestConfig => {
-    const method = config.method?.toUpperCase();
+    syncCsrfTokenFromCookies();
 
-    // Attach CSRF token for state-changing requests
+    const method = config.method?.toUpperCase();
     if (
       csrfToken &&
       method &&
@@ -48,8 +62,7 @@ api.interceptors.request.use(
       if (config.headers instanceof AxiosHeaders) {
         config.headers.set("X-CSRF-Token", csrfToken);
       } else {
-        (config.headers as Record<string, string>)["X-CSRF-Token"] =
-          csrfToken;
+        (config.headers as Record<string, string>)["X-CSRF-Token"] = csrfToken;
       }
     }
 
@@ -58,9 +71,6 @@ api.interceptors.request.use(
   (error: AxiosError) => Promise.reject(error)
 );
 
-// ------------------------------------------------------
-// 🔁 TOKEN REFRESH QUEUE SYSTEM
-// ------------------------------------------------------
 let isRefreshing = false;
 let failedQueue: {
   resolve: (value?: unknown) => void;
@@ -78,15 +88,13 @@ const processQueue = (error: any = null) => {
   failedQueue = [];
 };
 
-// ------------------------------------------------------
-// 📥 RESPONSE INTERCEPTOR
-// ------------------------------------------------------
 api.interceptors.response.use(
   (response) => {
-    // Capture CSRF token from response headers
     const token = response.headers["x-csrf-token"];
     if (token) {
       csrfToken = token;
+    } else {
+      syncCsrfTokenFromCookies();
     }
     return response;
   },
@@ -99,10 +107,7 @@ api.interceptors.response.use(
 
     const status = error.response.status;
     const url = originalRequest?.url || "";
-
-    // Skip refresh for authentication-related endpoints
     const skipRefresh =
-      url.includes("/auth/login") ||
       url.includes("/auth/master/login") ||
       url.includes("/auth/admin/login") ||
       url.includes("/auth/hospital/login") ||
@@ -115,14 +120,12 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    // Prevent infinite retry loops
     if (originalRequest._retry) {
       return Promise.reject(error);
     }
 
     originalRequest._retry = true;
 
-    // Queue requests while refreshing
     if (isRefreshing) {
       return new Promise((resolve, reject) => {
         failedQueue.push({
@@ -135,17 +138,12 @@ api.interceptors.response.use(
     isRefreshing = true;
 
     try {
-      await api.post(
-        "/api/v1/auth/refresh",
-        {},
-        { withCredentials: true }
-      );
-
+      await api.post("/api/v1/auth/refresh", {}, { withCredentials: true });
       processQueue();
       return api(originalRequest);
     } catch (refreshError) {
       processQueue(refreshError);
-      console.error("Session expired. Redirecting to login.");
+      clearClientAuthState();
 
       if (typeof window !== "undefined") {
         window.location.href = "/";

@@ -56,7 +56,6 @@ export default function VisitForm({
         ? initialValues.medication_end_date.split("T")[0]
         : ""
     );
-  console.log("VisitForm received patientId:", patientId);
     
   useEffect(() => {
     if (!patientId) return;
@@ -67,13 +66,9 @@ export default function VisitForm({
 
     if (!patientId) return;
 
-    console.log("Loading visits for patient:", patientId);
-
     try {
 
       const data = await DoctorService.getPreviousVisits(patientId);
-
-      console.log("Visits received:", data);
 
       setVisits(data || []);
 

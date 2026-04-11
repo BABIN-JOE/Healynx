@@ -1,13 +1,14 @@
 from app.core.time import *
-from fastapi import APIRouter, Depends, HTTPException, Body
+from fastapi import APIRouter, Body, Depends, HTTPException
 from sqlmodel import Session, select
 from datetime import datetime, timedelta
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from uuid import UUID
 
 from app.deps import get_db
 from app.deps_auth import require_role
 from app.core.rbac import Role
+from app.config import settings
 from app.db import models   
 
 router = APIRouter()
@@ -655,7 +656,6 @@ def get_previous_visits(
         .order_by(models.Visit.visit_date.desc())
         .limit(4)
     ).all()
-    print("Visits found:", len(visits))
 
     return [
         {
@@ -743,16 +743,42 @@ from app.services.ai.ai_service import ask_ai
 from app.services.ai.context_builder import build_patient_context
 
 class AIRequest(BaseModel):
-    question: str
+    question: str = Field(..., min_length=1, max_length=settings.MAX_AI_QUESTION_LENGTH)
 
 
 @router.post("/ask-ai/{patient_id}")
 def ask_ai_route(
     patient_id: str,
     request: AIRequest = Body(...),
+    payload=Depends(require_role([Role.DOCTOR])),
     db: Session = Depends(get_db)
 ):
-    question = request.question
+    question = request.question.strip()
+    doctor_id = payload.get("doctor_id")
+
+    if not doctor_id:
+        raise HTTPException(status_code=401, detail="Doctor authentication required")
+
+    mapping = db.exec(
+        select(models.HospitalDoctorMap).where(
+            models.HospitalDoctorMap.doctor_id == doctor_id,
+            models.HospitalDoctorMap.soft_deleted == False
+        )
+    ).first()
+
+    if not mapping:
+        raise HTTPException(status_code=403, detail="Doctor not mapped to hospital")
+
+    session_obj = db.exec(
+        select(models.PatientAccessSession).where(
+            models.PatientAccessSession.doctor_id == doctor_id,
+            models.PatientAccessSession.hospital_id == mapping.hospital_id,
+            models.PatientAccessSession.patient_id == patient_id,
+        )
+    ).first()
+
+    if not session_obj or is_expired(session_obj.view_expires_at):
+        raise HTTPException(status_code=403, detail="No active access to this patient")
 
     from app.db.crud.medical.history import (
         visit,

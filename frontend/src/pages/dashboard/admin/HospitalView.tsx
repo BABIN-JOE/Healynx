@@ -24,7 +24,6 @@ export default function HospitalView() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log("PARAM hospitalId:", hospitalId);
     const load = async () => {
       try {
         const res = await AdminService.getHospitalById(hospitalId!);

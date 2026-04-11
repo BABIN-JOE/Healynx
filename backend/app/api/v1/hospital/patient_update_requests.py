@@ -5,7 +5,7 @@ from sqlmodel import Session, select
 
 from app.core.time import *
 from app.deps import get_db
-from app.deps_auth import require_role
+from app.deps_auth import require_role, verify_csrf
 from app.core.rbac import Role
 from app.db import models, crud
 from app.core.audit import log_action
@@ -90,6 +90,7 @@ def list_profile_update_requests(
             "doctor_name": doctor_name,
             "requested_changes": req.requested_changes,
             "created_at": req.created_at.isoformat() if req.created_at else None,
+            "expires_at": expires_at.isoformat() if expires_at else None,
             "expires_in": seconds_remaining(expires_at),
             "can_act": req.status == "pending" and not is_expired(expires_at)
         })
@@ -112,6 +113,7 @@ def approve_profile_update_request(
     db = Depends(get_db),
     request: Request = None
 ):
+    verify_csrf(request, db)
     hospital_id = payload.get("hospital_id")
 
     req = crud.approve_patient_update_request(
@@ -149,6 +151,7 @@ def decline_profile_update_request(
     db = Depends(get_db),
     request: Request = None
 ):
+    verify_csrf(request, db)
     hospital_id = payload.get("hospital_id")
 
     req = crud.decline_patient_update_request(

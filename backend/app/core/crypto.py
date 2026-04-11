@@ -14,10 +14,22 @@ import re
 # AES-GCM Encryption
 # ---------------------------
 
-if not settings.APP_ENC_KEY:
-    raise RuntimeError("APP_ENC_KEY environment variable not set (base64 32 bytes).")
+def _load_app_enc_key() -> bytes:
+    if not settings.APP_ENC_KEY:
+        raise RuntimeError("APP_ENC_KEY environment variable not set (base64 32 bytes).")
 
-APP_ENC_KEY_BYTES = base64.b64decode(settings.APP_ENC_KEY)
+    try:
+        key = base64.b64decode(settings.APP_ENC_KEY, validate=True)
+    except Exception as exc:
+        raise RuntimeError("APP_ENC_KEY must be valid base64.") from exc
+
+    if len(key) != 32:
+        raise RuntimeError("APP_ENC_KEY must decode to exactly 32 bytes.")
+
+    return key
+
+
+APP_ENC_KEY_BYTES = _load_app_enc_key()
 
 
 def aesgcm_encrypt_str(plaintext: str) -> bytes:

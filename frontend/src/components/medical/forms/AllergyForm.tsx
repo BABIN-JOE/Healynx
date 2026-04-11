@@ -81,7 +81,6 @@ export default function AllergyForm({
   async function loadAllergies() {
     try {
       const data = await DoctorService.getPreviousAllergies(patientId);
-      console.log("Allergies received:", JSON.stringify(data, null, 2));
       setAllergies(data || []);
     } catch (err) {
       console.error("Failed to load allergies", err);

@@ -60,8 +60,6 @@ export default function Hospitals({
 
       const res: any = await AdminService.getHospitals(active, 1, 300);
 
-      console.log("HOSPITALS:", res);
-
       setHospitals(res?.data || []);
 
     } catch (err) {

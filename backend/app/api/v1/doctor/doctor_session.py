@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlmodel import Session, select
 from uuid import UUID
 
 from app.deps import get_db
-from app.deps_auth import require_role
+from app.deps_auth import require_role, verify_csrf
 from app.core.rbac import Role
 from app.db import crud, models
 from app.core import jwt_utils, security
@@ -21,8 +21,11 @@ def create_session(
     doctor_id: str,
     doctor_password: str,
     payload=Depends(require_role([Role.HOSPITAL])),
-    db = Depends(get_db)
+    db = Depends(get_db),
+    request: Request = None,
 ):
+    verify_csrf(request, db)
+
     if payload.get("hospital_id") != hospital_id:
         raise HTTPException(403, "Hospital mismatch")
 
@@ -65,7 +68,6 @@ def get_my_hospital(
             (models.HospitalDoctorMap.soft_deleted.is_(None))
         )
     ).first()
-    print("JWT doctor_id:", payload.get("doctor_id"))
 
     if not mapping:
         return {"mapped": False}

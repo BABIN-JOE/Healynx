@@ -58,8 +58,6 @@ export default function Doctors() {
 
       const res: any = await AdminService.getDoctors(active, 1, 300);
 
-      console.log("DOCTORS:", res);
-
       setDoctors(res || []);
 
     } catch (err) {

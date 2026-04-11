@@ -1,20 +1,14 @@
-#app/services/ai/ai_service.py
-
+import logging
 import os
 from groq import Groq
 
-# =========================
-# CONFIG
-# =========================
+logger = logging.getLogger(__name__)
+
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 MODEL = os.getenv("GROQ_MODEL", "llama3-70b-8192")
 
 client = Groq(api_key=GROQ_API_KEY)
 
-
-# =========================
-# AI FUNCTION
-# =========================
 def ask_ai(question: str, context: str) -> str:
     try:
         prompt = f"""
@@ -54,6 +48,6 @@ Answer:
 
         return answer if answer else "Not available in records"
 
-    except Exception as e:
-        print("GROQ ERROR:", str(e))
+    except Exception:
+        logger.exception("GROQ request failed")
         return "AI error: Unable to generate response"

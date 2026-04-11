@@ -130,8 +130,5 @@ def history_expiry_time() -> datetime:
 # =========================================================
 
 def debug_time(label: str, dt: datetime | None):
-    """
-    Helpful for debugging time issues
-    """
     dt = ensure_utc(dt)
-    print(f"[TIME DEBUG] {label}: {dt} | now={utcnow()}")
+    return f"[TIME DEBUG] {label}: {dt} | now={utcnow()}"

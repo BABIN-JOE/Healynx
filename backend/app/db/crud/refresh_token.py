@@ -25,7 +25,10 @@ def revoke_refresh_token(db: Session, token_hash: str):
         db.commit()
 
 
-def revoke_all_user_tokens(db: Session, doctor_id=None, user_id=None):
+def revoke_all_user_tokens(db: Session, doctor_id=None, user_id=None, hospital_id=None):
+    if not any((doctor_id, user_id, hospital_id)):
+        return
+
     q = select(models.RefreshToken)
 
     if doctor_id:
@@ -33,6 +36,9 @@ def revoke_all_user_tokens(db: Session, doctor_id=None, user_id=None):
 
     if user_id:
         q = q.where(models.RefreshToken.user_id == user_id)
+
+    if hospital_id:
+        q = q.where(models.RefreshToken.hospital_id == hospital_id)
 
     tokens = db.exec(q).all()
 

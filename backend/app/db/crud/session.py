@@ -58,6 +58,9 @@ def revoke_all_user_sessions(
     doctor_id=None,
     hospital_id=None
 ):
+    if not any((user_id, doctor_id, hospital_id)):
+        return
+
     q = select(models.Session)
 
     if user_id:

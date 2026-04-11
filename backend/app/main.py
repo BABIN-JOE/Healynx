@@ -1,83 +1,107 @@
-# app/main.py
-
-import time
 import logging
+import time
 from collections import defaultdict, deque
 from typing import Dict
-import os
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlmodel import SQLModel, Session
-from app.db import models
 
-from app.db.engine import engine
-from app.db.crud.medical.pending import cleanup_doctor_visible_entries
+from app.config import settings
 from app.core import validators
 from app.core.validators import validate_address_object
+from app.db import models
+from app.db.crud.medical.pending import cleanup_doctor_visible_entries
+from app.db.engine import engine
+from app.deps_auth import request_has_auth_cookie, verify_csrf
 
-from dotenv import load_dotenv
-load_dotenv()
-
-# -------------------------------------------------------
-# FastAPI App
-# -------------------------------------------------------
 app = FastAPI(
     title="Healynx API",
     version="1.0.0",
     description="Secure Medical Data Platform",
-    redirect_slashes=False
+    redirect_slashes=False,
+    docs_url="/docs" if settings.ENABLE_DOCS else None,
+    redoc_url="/redoc" if settings.ENABLE_DOCS else None,
+    openapi_url="/openapi.json" if settings.ENABLE_DOCS else None,
 )
 
-# -------------------------------------------------------
-# Routers
-# -------------------------------------------------------
-from app.api.v1.master.router import router as master_router
+from app.api.v1 import attachments, auth, patients
 from app.api.v1.admin.router import router as admin_router
-from app.api.v1.hospital.router import router as hospital_router
 from app.api.v1.doctor import router as doctor_router
-from app.api.v1 import auth, patients, attachments
+from app.api.v1.hospital.router import router as hospital_router
+from app.api.v1.master.router import router as master_router
 from app.api.v1.medical.router import router as medical_router
 
-# -------------------------------------------------------
-# Logger
-# -------------------------------------------------------
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("healynx")
 
-FRONTEND_URL = os.getenv("FRONTEND_URL", "*")
-
-# -------------------------------------------------------
-# CORS
-# -------------------------------------------------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://healynx-med.vercel.app"],
+    allow_origins=settings.ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=[
-        "Content-Type",
+        "Accept",
         "Authorization",
+        "Content-Type",
         "X-CSRF-Token",
     ],
     expose_headers=["X-CSRF-Token"],
 )
 
-# -------------------------------------------------------
-# Security Headers Middleware
-# -------------------------------------------------------
+CSRF_EXEMPT_PATHS = {
+    "/api/v1/auth/master/login",
+    "/api/v1/auth/admin/login",
+    "/api/v1/auth/hospital/login",
+    "/api/v1/auth/doctor/login",
+    "/api/v1/auth/refresh",
+    "/api/v1/auth/logout",
+    "/api/v1/doctor/register",
+    "/api/v1/hospital/register",
+}
+STATE_CHANGING_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
+
+
 @app.middleware("http")
 async def security_headers(request: Request, call_next):
     response = await call_next(request)
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
-    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "no-referrer"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+    response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
+    response.headers["Cross-Origin-Resource-Policy"] = "cross-origin"
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
+    )
+
+    if settings.COOKIE_SECURE:
+        response.headers["Strict-Transport-Security"] = (
+            "max-age=63072000; includeSubDomains; preload"
+        )
+
+    if request.url.path.startswith("/api/v1/"):
+        response.headers["Cache-Control"] = "no-store"
+        response.headers["Pragma"] = "no-cache"
+
     return response
 
-# -------------------------------------------------------
-# Rate Limiter
-# -------------------------------------------------------
+
+@app.middleware("http")
+async def csrf_protection_middleware(request: Request, call_next):
+    if (
+        request.method in STATE_CHANGING_METHODS
+        and request.url.path.startswith("/api/v1/")
+        and request.url.path not in CSRF_EXEMPT_PATHS
+        and request_has_auth_cookie(request)
+    ):
+        with Session(engine) as db:
+            verify_csrf(request, db)
+
+    return await call_next(request)
+
+
 RATE_LIMIT_WINDOW_SECONDS = 60
 RATE_LIMIT_MAX_FAILURES = 12
 RATE_LIMIT_BLOCK_SECONDS = 300
@@ -85,8 +109,10 @@ RATE_LIMIT_BLOCK_SECONDS = 300
 _failure_store: Dict[str, deque] = defaultdict(deque)
 _blocked_until: Dict[str, float] = {}
 
+
 def _rl_key(ip: str, path: str) -> str:
     return f"{ip}:{path}"
+
 
 def record_validation_failure(ip: str, path: str):
     key = _rl_key(ip, path)
@@ -102,6 +128,8 @@ def record_validation_failure(ip: str, path: str):
         _blocked_until[key] = now + RATE_LIMIT_BLOCK_SECONDS
         logger.warning("Rate limiter blocking ip=%s path=%s", ip, path)
 
+
+
 def is_blocked(ip: str, path: str) -> bool:
     key = _rl_key(ip, path)
     until = _blocked_until.get(key)
@@ -116,30 +144,33 @@ def is_blocked(ip: str, path: str) -> bool:
 
     return True
 
-# -------------------------------------------------------
-# Validation Rules
-# -------------------------------------------------------
+
 VALIDATION_RULES = {
     ("POST", "/api/v1/master/admins/create"): [
         ("first_name", validators.validate_name),
         ("last_name", validators.validate_name),
-        ("gender", lambda v: v in ("male", "female", "other") or (_ for _ in ()).throw(ValueError("invalid gender"))),
+        (
+            "gender",
+            lambda v: v in ("male", "female", "other")
+            or (_ for _ in ()).throw(ValueError("invalid gender")),
+        ),
         ("dob", validators.validate_dob),
         ("aadhaar", validators.validate_aadhaar),
         ("phone", validators.validate_phone),
         ("email", validators.validate_email),
         ("address", validate_address_object),
-        ("username", lambda v: v.strip() or (_ for _ in ()).throw(ValueError("username required"))),
+        (
+            "username",
+            lambda v: v.strip()
+            or (_ for _ in ()).throw(ValueError("username required")),
+        ),
         ("password", validators.validate_password),
     ],
 }
 
-# -------------------------------------------------------
-# VALIDATION MIDDLEWARE
-# -------------------------------------------------------
+
 @app.middleware("http")
 async def validation_middleware(request: Request, call_next):
-
     method = request.method
     path = request.url.path
 
@@ -161,7 +192,6 @@ async def validation_middleware(request: Request, call_next):
         return JSONResponse(status_code=429, content={"error": "Too many invalid requests"})
 
     rule = VALIDATION_RULES.get((method, path))
-
     if not rule:
         return await call_next(request)
 
@@ -178,29 +208,27 @@ async def validation_middleware(request: Request, call_next):
 
         try:
             validator_fn(body[field_name])
-        except Exception as e:
+        except Exception as exc:
             record_validation_failure(client_ip, path)
-            return JSONResponse(status_code=400, content={"error": str(e)})
+            return JSONResponse(status_code=400, content={"error": str(exc)})
 
     return await call_next(request)
 
-# -------------------------------------------------------
-# Startup
-# -------------------------------------------------------
+
 @app.on_event("startup")
 def on_startup():
+    settings.validate_runtime()
     logger.info("Ensuring database tables exist...")
     SQLModel.metadata.create_all(engine)
     logger.info("Database ready.")
+
 
 @app.on_event("startup")
 def startup_cleanup():
     with Session(engine) as session:
         cleanup_doctor_visible_entries(session)
 
-# -------------------------------------------------------
-# Routers
-# -------------------------------------------------------
+
 app.include_router(auth.router, prefix="/api/v1/auth")
 app.include_router(master_router, prefix="/api/v1/master")
 app.include_router(admin_router, prefix="/api/v1/admin")
@@ -210,9 +238,7 @@ app.include_router(medical_router, prefix="/api/v1/medical")
 app.include_router(patients.router, prefix="/api/v1/patients")
 app.include_router(attachments.router, prefix="/api/v1/attachments")
 
-# -------------------------------------------------------
-# Root
-# -------------------------------------------------------
+
 @app.get("/")
 def root():
     return {"message": "Healynx API is running"}

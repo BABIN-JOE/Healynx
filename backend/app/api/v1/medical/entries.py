@@ -421,8 +421,7 @@ def get_pending_entry_details(
                             (today.month, today.day) < (dob.month, dob.day)
                         )
 
-                    except Exception as e:
-                        print("DOB parse error:", e)
+                    except Exception:
                         patient_age = None
 
             # ---------------- DOCTOR ----------------
