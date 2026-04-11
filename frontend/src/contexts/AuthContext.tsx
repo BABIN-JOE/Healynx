@@ -12,6 +12,7 @@ import {
 import api, {
   clearClientAuthState,
   syncCsrfTokenFromCookies,
+  setLogoutInProgress,
 } from "../api/apiClient";
 
 interface AuthContextType {
@@ -108,6 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ------------------------------------------------------
   const logout = async () => {
     syncCsrfTokenFromCookies();
+    setLogoutInProgress(true);
 
     try {
       await api.post(
@@ -116,14 +118,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         { withCredentials: true }
       );
     } catch {
-      // Ignore errors if session already expired
+      // Ignore failures; session may already be invalidated
     } finally {
       clearAuthState();
 
-      // Notify all tabs
+      // Sync logout across tabs
       localStorage.setItem("healynx_logout", Date.now().toString());
 
-      window.location.href = "/";
+      // Reset logout flag
+      setLogoutInProgress(false);
+
+      if (typeof window !== "undefined") {
+        window.location.replace("/");
+      }
     }
   };
 
