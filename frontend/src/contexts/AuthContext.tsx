@@ -88,12 +88,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
+    syncCsrfTokenFromCookies();
+
     try {
       await api.post("/api/v1/auth/logout", {}, { withCredentials: true });
     } catch {
       // Cookie cleanup still matters locally even if the server session is already gone.
     } finally {
       clearAuthState();
+      if (typeof window !== "undefined") {
+        window.location.href = "/";
+      }
     }
   };
 

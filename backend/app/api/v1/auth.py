@@ -191,6 +191,10 @@ def issue_tokens(
         **user_ids,
     )
 
+    # Clean up any stale role cookies before issuing a new session.
+    for cookie in COOKIE_MAP.values():
+        _delete_cookie(response, cookie)
+
     set_auth_cookie(response, role, access_token)
     set_refresh_cookie(response, refresh_token)
     set_csrf_cookie(response, csrf_token)
