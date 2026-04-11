@@ -67,7 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (hasLoaded.current) return;
     hasLoaded.current = true;
-    loadSession();
+    // loadSession(); // Disabled auto-login - always start fresh
   }, []);
 
   const login = async (
