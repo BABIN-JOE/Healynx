@@ -372,20 +372,29 @@ def refresh(request: Request, response: Response, db: Session = Depends(get_db))
 
 @router.post("/logout")
 def logout(request: Request, response: Response, db: Session = Depends(get_db)):
+    # Validate CSRF (session optional for logout)
     verify_cookie_bound_csrf(request, db, require_session=False)
 
-    for cookie in COOKIE_MAP.values():
-        _delete_cookie(response, cookie)
-    _delete_cookie(response, REFRESH_COOKIE)
-    _delete_cookie(response, CSRF_COOKIE)
-
+    # Revoke refresh token and its associated session
     refresh_token = request.cookies.get(REFRESH_COOKIE)
     if refresh_token:
         try:
-            refresh_crud.revoke_refresh_token(db, hash_token(refresh_token))
+            stored = refresh_crud.get_refresh_token(
+                db, hash_token(refresh_token)
+            )
+            if stored:
+                # Revoke refresh token
+                refresh_crud.revoke_refresh_token(
+                    db, hash_token(refresh_token)
+                )
+
+                # Revoke linked session
+                if stored.session_id:
+                    session_crud.revoke_session(db, stored.session_id)
         except Exception:
             db.rollback()
 
+    # Revoke session from access token if available
     try:
         payload = get_jwt_payload(request, db)
         session_id = payload.get("session_id")
@@ -396,5 +405,11 @@ def logout(request: Request, response: Response, db: Session = Depends(get_db)):
         if session:
             session_crud.revoke_session(db, session.id)
 
+    # Delete all cookies
+    for cookie in COOKIE_MAP.values():
+        _delete_cookie(response, cookie)
+    _delete_cookie(response, REFRESH_COOKIE)
+    _delete_cookie(response, CSRF_COOKIE)
+
     db.commit()
-    return {"message": "Logged out"}
+    return {"message": "Logged out successfully"}
