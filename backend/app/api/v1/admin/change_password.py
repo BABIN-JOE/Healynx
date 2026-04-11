@@ -1,12 +1,10 @@
 #api/v1/admin/change_password.py
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session
 
 from app.deps import get_db
 from app.core.rbac import require_role, Role
-from app.deps_auth import require_role, verify_csrf
-from app.core.rbac import Role
 from app.core import security
 from app.db.models import Admin as AdminModel
 
@@ -18,9 +16,7 @@ def change_password(
     new_password: str,
     payload=Depends(require_role([Role.ADMIN])),
     db = Depends(get_db),
-    request: Request = None,
 ):
-    verify_csrf(request, db) 
     admin = db.get(AdminModel, payload["user_id"])
 
     if not admin:

@@ -16,9 +16,7 @@ def request_join(
     hospital_license: str,
     payload=Depends(require_role([Role.DOCTOR])),
     db = Depends(get_db),
-    request: Request = None,
 ):
-    verify_csrf(request, db) 
     doctor_id = payload.get("doctor_id")
 
     doc = crud.get_doctor_by_id(db, doctor_id)

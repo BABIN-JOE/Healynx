@@ -18,9 +18,7 @@ def update_contact(
     address: str = Body(None),
     payload=Depends(require_role([Role.DOCTOR])),
     db = Depends(get_db),
-    request: Request = None,
 ):
-    verify_csrf(request, db) 
     doctor_id = payload.get("doctor_id")
     doctor = db.get(Doctor, doctor_id)
 

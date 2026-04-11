@@ -1,13 +1,12 @@
 # app/api/v1/master/update_admin.py
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException
 from uuid import UUID
 from sqlmodel import Session, select
 import json
 
 from app.deps import get_db
 from app.core.rbac import require_role, Role
-from app.deps_auth import require_role, verify_csrf
 from app.db.models import Admin
 from app.core import crypto, security
 
@@ -19,9 +18,7 @@ def update_admin(
     data: dict,
     db = Depends(get_db),
     payload=Depends(require_role([Role.MASTER])),
-    request: Request = None,
 ):
-    verify_csrf(request, db) 
     admin = db.query(Admin).filter(Admin.id == admin_id).first()
     if not admin:
         raise HTTPException(404, "Admin not found")

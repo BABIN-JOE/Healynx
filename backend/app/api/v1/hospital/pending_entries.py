@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlmodel import Session, select
 
 from app.deps import get_db
-from app.deps_auth import require_role, verify_csrf
+from app.deps_auth import require_role
 from app.core.rbac import Role
 from app.db import models, crud
 from app.core.audit import log_action
@@ -195,9 +195,7 @@ def approve_pending_entry(
     id: str,
     payload=Depends(require_role([Role.HOSPITAL])),
     db = Depends(get_db),
-    request: Request = None,
 ):
-    verify_csrf(request, db)
     hospital_id = payload["hospital_id"]
 
     entry = crud.approve_medical_entry_pending(db, id, hospital_id)
@@ -225,9 +223,7 @@ def decline_pending_entry(
     id: str,
     payload=Depends(require_role([Role.HOSPITAL])),
     db = Depends(get_db),
-    request: Request = None,
 ):
-    verify_csrf(request, db)
     hospital_id = payload["hospital_id"]
 
     entry = crud.decline_medical_entry_pending(db, id, hospital_id)

@@ -4,7 +4,7 @@ from sqlmodel import Session, select
 from uuid import UUID
 
 from app.deps import get_db
-from app.deps_auth import require_role, verify_csrf
+from app.deps_auth import require_role
 from app.core.rbac import Role
 from app.db import models
 from app.core.audit import log_action
@@ -37,10 +37,7 @@ def create_pending_entry(
     data: dict = Body(...),
     payload=Depends(require_role([Role.DOCTOR])),
     db = Depends(get_db),
-    request: Request = None,
 ):
-    verify_csrf(request, db) 
-
     doctor_id = payload.get("doctor_id")
 
     mapping = db.exec(
@@ -270,10 +267,7 @@ def approve_pending_entry(
     pending_id: str,
     payload=Depends(require_role([Role.HOSPITAL])),
     db = Depends(get_db),
-    request: Request = None,
 ):
-    verify_csrf(request, db) 
-
     hospital_id = UUID(str(payload.get("hospital_id")))
 
     history = approve_medical_entry_pending(
@@ -300,10 +294,7 @@ def decline_pending_entry(
     data: dict = Body(...),
     payload=Depends(require_role([Role.HOSPITAL])),
     db = Depends(get_db),
-    request: Request = None,
 ):
-    verify_csrf(request, db) 
-
     hospital_id = UUID(str(payload.get("hospital_id")))
     reason = data.get("reason")
 
@@ -471,10 +462,7 @@ def rerequest_pending_entry(
     payload: dict = Body(default={}),
     user=Depends(require_role([Role.DOCTOR])),
     db = Depends(get_db),
-    request: Request = None,
 ):
-    verify_csrf(request, db) 
-
     doctor_id = user["doctor_id"]
 
     pending_models = [
@@ -521,10 +509,7 @@ def edit_pending_entry(
     payload: dict,
     user=Depends(require_role([Role.DOCTOR])),
     db = Depends(get_db),
-    request: Request = None,
 ):
-    verify_csrf(request, db) 
-
     doctor_id = user["doctor_id"]
 
     pending_models = [

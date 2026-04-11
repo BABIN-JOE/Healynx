@@ -3,7 +3,7 @@ from sqlmodel import Session
 
 from app.deps import get_db
 from app.core.rbac import require_role, Role 
-from app.deps_auth import require_role, verify_csrf
+from app.deps_auth import require_role
 from app.core.rbac import Role
 from app.db import crud
 from app.core.audit import log_action
@@ -15,10 +15,7 @@ router = APIRouter()
 def approve_doctor(
     req_id: str,
     payload=Depends(require_role([Role.ADMIN])),
-    db = Depends(get_db),
-    request: Request = None
-):
-    verify_csrf(request, db) 
+    db = Depends(get_db)):
     req = crud.get_doctor_request(db, req_id)
 
     if not req:

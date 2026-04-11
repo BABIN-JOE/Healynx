@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session
 import json
 
 from app.deps import get_db
-from app.deps_auth import require_role, verify_csrf
+from app.deps_auth import require_role
 from app.core.rbac import Role
 from app.db.models import Doctor
 from app.core import crypto
@@ -18,10 +18,7 @@ def update_doctor(
     data: dict,
     payload=Depends(require_role([Role.ADMIN])),
     db: Session = Depends(get_db),
-    request: Request = None,
 ):
-    verify_csrf(request, db)
-
     doctor = db.get(Doctor, doctor_id)
 
     if not doctor:

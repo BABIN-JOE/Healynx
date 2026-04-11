@@ -14,7 +14,7 @@ from app.core.validators import validate_address_object
 from app.db import models
 from app.db.crud.medical.pending import cleanup_doctor_visible_entries
 from app.db.engine import engine
-from app.deps_auth import request_has_auth_cookie, verify_csrf
+from app.deps_auth import request_has_auth_cookie, verify_csrf_tokens_direct
 
 app = FastAPI(
     title="Healynx API",
@@ -96,8 +96,11 @@ async def csrf_protection_middleware(request: Request, call_next):
         and request.url.path not in CSRF_EXEMPT_PATHS
         and request_has_auth_cookie(request)
     ):
-        with Session(engine) as db:
-            verify_csrf(request, db)
+        try:
+            with Session(engine) as db:
+                verify_csrf_tokens_direct(request, db)
+        except HTTPException as e:
+            return JSONResponse(status_code=e.status_code, content={"detail": e.detail})
 
     return await call_next(request)
 

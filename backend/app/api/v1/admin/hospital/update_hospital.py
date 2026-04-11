@@ -5,7 +5,7 @@ from sqlmodel import Session
 import json
 
 from app.deps import get_db
-from app.deps_auth import require_role, verify_csrf
+from app.deps_auth import require_role
 from app.core.rbac import Role
 from app.db.models import Hospital
 from app.core import crypto
@@ -20,10 +20,7 @@ def update_hospital(
     data: dict,
     payload=Depends(require_role([Role.ADMIN])),
     db: Session = Depends(get_db),
-    request: Request = None,
 ):
-    verify_csrf(request, db)
-
     hospital = db.get(Hospital, hospital_id)
 
     if not hospital:

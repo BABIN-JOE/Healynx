@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Request, HTTPException
 from sqlmodel import Session
 
 from app.deps import get_db
-from app.deps_auth import require_role, verify_csrf
+from app.deps_auth import require_role
 from app.core.rbac import Role
 from app.schemas import PatientCreate
 from app.core import crypto
@@ -16,11 +16,7 @@ router = APIRouter()
 def add_patient(
     body: PatientCreate,
     payload=Depends(require_role([Role.ADMIN])),
-    db = Depends(get_db),
-    request: Request = None
-):
-    
-    verify_csrf(request, db)
+    db = Depends(get_db)):
     valid_groups = {"A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"}
 
     if body.blood_group not in valid_groups:

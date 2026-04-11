@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session
 
 from app.deps import get_db
-from app.deps_auth import require_role, verify_csrf
+from app.deps_auth import require_role
 from app.core.rbac import Role
 from app.db import crud
 from app.db.models import DoctorRequest
@@ -15,9 +15,7 @@ def approve_doctor_join(
     req_id: str,
     payload=Depends(require_role([Role.HOSPITAL])),
     db = Depends(get_db),
-    request: Request = None,
 ):
-    verify_csrf(request, db) 
     hospital_id = payload["hospital_id"]
 
     req = db.get(DoctorRequest, req_id)

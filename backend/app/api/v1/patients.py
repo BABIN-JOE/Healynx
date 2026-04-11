@@ -111,11 +111,7 @@ def update_blood_group(
     blood_group: str,
     payload=Depends(require_role([Role.DOCTOR])),
     db = Depends(get_db),
-    request: Request = None,
 ):
-    
-    verify_csrf(request, db)
-
     valid_groups = {"A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"}
 
     if blood_group not in valid_groups:

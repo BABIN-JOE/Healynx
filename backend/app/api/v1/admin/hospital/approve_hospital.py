@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlmodel import Session
 
 from app.deps import get_db
-from app.deps_auth import require_role, verify_csrf
+from app.deps_auth import require_role
 from app.core.rbac import Role
 from app.db import crud
 from app.core.audit import log_action
@@ -19,8 +19,6 @@ def approve_hospital(
     db: Session = Depends(get_db),
 ):
     # CSRF validation
-    verify_csrf(request, db)
-
     req = crud.get_hospital_request(db, req_id)
     if not req:
         raise HTTPException(status_code=404, detail="Hospital request not found")

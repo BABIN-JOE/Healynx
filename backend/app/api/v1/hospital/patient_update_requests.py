@@ -5,7 +5,7 @@ from sqlmodel import Session, select
 
 from app.core.time import *
 from app.deps import get_db
-from app.deps_auth import require_role, verify_csrf
+from app.deps_auth import require_role
 from app.core.rbac import Role
 from app.db import models, crud
 from app.core.audit import log_action
@@ -23,7 +23,6 @@ router = APIRouter()
 def list_profile_update_requests(
     payload=Depends(require_role([Role.HOSPITAL])),
     db = Depends(get_db),
-    request: Request = None,
 ):
     hospital_id = payload.get("hospital_id")
     now = utcnow()
@@ -110,10 +109,7 @@ def list_profile_update_requests(
 def approve_profile_update_request(
     req_id: str,
     payload=Depends(require_role([Role.HOSPITAL])),
-    db = Depends(get_db),
-    request: Request = None
-):
-    verify_csrf(request, db)
+    db = Depends(get_db)):
     hospital_id = payload.get("hospital_id")
 
     req = crud.approve_patient_update_request(
@@ -148,10 +144,7 @@ def approve_profile_update_request(
 def decline_profile_update_request(
     req_id: str,
     payload=Depends(require_role([Role.HOSPITAL])),
-    db = Depends(get_db),
-    request: Request = None
-):
-    verify_csrf(request, db)
+    db = Depends(get_db)):
     hospital_id = payload.get("hospital_id")
 
     req = crud.decline_patient_update_request(

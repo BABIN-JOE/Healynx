@@ -4,7 +4,7 @@ from sqlmodel import Session
 
 from app.deps import get_db
 from app.core.rbac import require_role, Role
-from app.deps_auth import require_role, verify_csrf
+from app.deps_auth import require_role
 from app.core.rbac import Role
 from app.db.models import Hospital
 from app.core.audit import log_action
@@ -16,10 +16,7 @@ router = APIRouter()
 def block_hospital(
     hospital_id: str,
     db = Depends(get_db),
-    payload = Depends(require_role([Role.ADMIN])),
-    request: Request = None
-):
-    verify_csrf(request, db) 
+    payload = Depends(require_role([Role.ADMIN]))):
     h = db.get(Hospital, hospital_id)
     if not h:
         raise HTTPException(404, "Hospital not found")

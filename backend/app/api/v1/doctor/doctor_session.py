@@ -22,10 +22,7 @@ def create_session(
     doctor_password: str,
     payload=Depends(require_role([Role.HOSPITAL])),
     db = Depends(get_db),
-    request: Request = None,
 ):
-    verify_csrf(request, db)
-
     if payload.get("hospital_id") != hospital_id:
         raise HTTPException(403, "Hospital mismatch")
 

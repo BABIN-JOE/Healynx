@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Body
 from sqlmodel import Session, select
 
 from app.deps import get_db
-from app.deps_auth import require_role, verify_csrf
+from app.deps_auth import require_role
 from app.core.rbac import Role
 from app.db import crud, models
 from app.core import crypto
@@ -20,10 +20,7 @@ def request_patient_access(
     aadhaar: str = Body(..., embed=True),
     payload=Depends(require_role([Role.DOCTOR])),
     db = Depends(get_db),
-    request: Request = None,
 ):
-    verify_csrf(request, db) 
-
     doctor_id = payload.get("doctor_id")
 
     if not doctor_id:
@@ -228,11 +225,7 @@ def list_pending_patient_access_requests_for_hospital(
 def approve_access_request(
     req_id: str,
     payload=Depends(require_role([Role.HOSPITAL])),
-    db = Depends(get_db),
-    request: Request = None
-):
-    verify_csrf(request, db) 
-
+    db = Depends(get_db)):
     hospital_id = payload.get("hospital_id")
 
     approved = crud.approve_patient_access_request(
@@ -289,11 +282,7 @@ def decline_access_request(
     req_id: str,
     reason: str = Body(None),
     payload=Depends(require_role([Role.HOSPITAL])),
-    db = Depends(get_db),
-    request: Request = None
-):
-    verify_csrf(request, db) 
-
+    db = Depends(get_db)):
     hospital_id = payload.get("hospital_id")
 
     res = crud.decline_patient_access_request(
@@ -472,10 +461,7 @@ def request_patient_update(
     changes: dict,
     payload=Depends(require_role([Role.DOCTOR])),
     db = Depends(get_db),
-    request: Request = None,
 ):
-    verify_csrf(request, db)
-
     doctor_id = payload.get("doctor_id")
 
     if not doctor_id:

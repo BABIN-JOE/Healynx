@@ -76,7 +76,8 @@ def request_has_auth_cookie(request: Request) -> bool:
     return any(request.cookies.get(cookie_name) for cookie_name in AUTH_COOKIE_NAMES)
 
 
-def verify_csrf(request: Request, db: Session = Depends(get_db)):
+def _extract_csrf_tokens(request: Request) -> tuple[str, str]:
+    """Extract CSRF tokens from request without validation."""
     cookie_token = request.cookies.get("csrf_token")
     header_token = request.headers.get("X-CSRF-Token")
 
@@ -92,14 +93,31 @@ def verify_csrf(request: Request, db: Session = Depends(get_db)):
     if cookie_token != header_token:
         raise HTTPException(status_code=403, detail="CSRF invalid")
 
-    payload = get_jwt_payload(request, db)
-    session = session_crud.get_session(db, payload.get("session_id"))
+    return cookie_token, header_token
 
-    if not session:
-        raise HTTPException(status_code=403, detail="Invalid session")
 
-    if session.csrf_token != cookie_token:
-        raise HTTPException(status_code=403, detail="CSRF mismatch")
+def verify_csrf_tokens_direct(request: Request, db: Session) -> None:
+    """Non-dependency version for middleware use."""
+    cookie_token, header_token = _extract_csrf_tokens(request)
+
+    try:
+        payload = get_jwt_payload(request, db)
+        session = session_crud.get_session(db, payload.get("session_id"))
+
+        if not session:
+            raise HTTPException(status_code=403, detail="Invalid session")
+
+        if session.csrf_token != cookie_token:
+            raise HTTPException(status_code=403, detail="CSRF mismatch")
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=403, detail="CSRF verification failed")
+
+
+def verify_csrf(request: Request, db: Session = Depends(get_db)):
+    """Dependency version for route handlers."""
+    verify_csrf_tokens_direct(request, db)
 
 
 def get_current_user(payload: dict = Depends(get_jwt_payload)):

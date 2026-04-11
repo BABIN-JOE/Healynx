@@ -1,10 +1,9 @@
 # app/api/v1/master/create_admin.py
 
-from fastapi import APIRouter, Depends, Request, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 from app.deps import get_db
 from app.core.rbac import require_role, Role
-from app.deps_auth import require_role, verify_csrf
 from app.schemas import MasterCreate
 from app.core import crypto, security
 from app.db import crud
@@ -20,9 +19,7 @@ def create_admin(
     body: MasterCreate,
     payload=Depends(require_role([Role.MASTER])),
     db = Depends(get_db),
-    request: Request = None
 ):
-    verify_csrf(request, db) 
     # Aadhaar: compute hash and encrypted blob
     aadhaar_hash = crypto.aadhaar_hash_hex(body.aadhaar)
     aadhaar_encrypted = crypto.aesgcm_encrypt_str(body.aadhaar)
