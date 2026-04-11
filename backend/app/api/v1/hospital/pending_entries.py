@@ -1,7 +1,6 @@
-from app.core.time import utcnow, is_expired
+from app.core.time import calculate_age, is_expired, parse_date_string, utcnow
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlmodel import Session, select
-from datetime import datetime, date
 
 from app.deps import get_db
 from app.deps_auth import require_role, verify_csrf
@@ -143,14 +142,8 @@ def get_pending_entry(
 
                 if patient and patient.dob:
                     try:
-                        dob = datetime.strptime(patient.dob, "%Y-%m-%d").date()
-
-                        today = date.today()
-
-                        patient_age = today.year - dob.year - (
-                            (today.month, today.day) < (dob.month, dob.day)
-                        )
-
+                        dob = parse_date_string(patient.dob)
+                        patient_age = calculate_age(dob)
                     except Exception:
                         patient_age = None
 

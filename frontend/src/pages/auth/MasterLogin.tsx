@@ -1,28 +1,29 @@
-//src/pages/auth/MasterLogin.tsx
-
-import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+﻿import React, { useState } from "react";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+
+import { getRoleHomePath } from "../../auth/roleRoutes";
 import { useAuth } from "../../contexts/AuthContext";
 
 export default function MasterLogin() {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, user, role, loading: authLoading } = useAuth();
 
   const [form, setForm] = useState({ username: "", password: "" });
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: any) => {
+  if (!authLoading && user && role) {
+    return <Navigate to={getRoleHomePath(role)} replace />;
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      // This will call backend and AuthContext will read /auth/me
       await login("master", form);
-
       toast.success("Master logged in!");
-      navigate("/master", { replace: true });
-
+      navigate(getRoleHomePath("master"), { replace: true });
     } catch (err: any) {
       toast.error(err?.response?.data?.detail || "Invalid credentials");
     } finally {
@@ -31,8 +32,8 @@ export default function MasterLogin() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
-      <div className="w-full max-w-md bg-white rounded-xl shadow p-6">
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
+      <div className="w-full max-w-md rounded-xl bg-white p-6 shadow">
         <h1 className="text-2xl font-bold text-indigo-600">Master Login</h1>
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
@@ -42,7 +43,7 @@ export default function MasterLogin() {
               required
               value={form.username}
               onChange={(e) => setForm({ ...form, username: e.target.value })}
-              className="mt-1 w-full px-3 py-2 border rounded-md"
+              className="mt-1 w-full rounded-md border px-3 py-2"
             />
           </div>
 
@@ -53,16 +54,16 @@ export default function MasterLogin() {
               type="password"
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
-              className="mt-1 w-full px-3 py-2 border rounded-md"
+              className="mt-1 w-full rounded-md border px-3 py-2"
             />
           </div>
 
-          <button type="submit" disabled={loading} className="w-full bg-indigo-600 text-white py-2 rounded-md">
+          <button type="submit" disabled={loading} className="w-full rounded-md bg-indigo-600 py-2 text-white">
             {loading ? "Signing in..." : "Sign in"}
           </button>
 
-          <Link to="/" className="text-sm text-indigo-600 text-center block mt-3">
-            ← Back to Login
+          <Link to="/" className="mt-3 block text-center text-sm text-indigo-600">
+            Back to Login
           </Link>
         </form>
       </div>

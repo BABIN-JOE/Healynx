@@ -1,6 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-import { Toaster } from "sonner";
 import { useAuth } from "./contexts/AuthContext";
+import { getRoleHomePath } from "./auth/roleRoutes";
 
 import ProtectedRoute from "./components/ui/ProtectedRoute";
 
@@ -19,79 +19,84 @@ import HospitalRoutes from "./pages/dashboard/hospital/HospitalRoutes";
 import DoctorRoutes from "./pages/dashboard/doctor/DoctorRoutes";
 
 function RedirectByRole({ role }: { role: string | null }) {
-  if (!role) return <Navigate to="/" replace />;
+  if (!role) {
+    return <Navigate to="/" replace />;
+  }
 
-  if (role === "master") return <Navigate to="/master" replace />;
-  if (role === "admin") return <Navigate to="/admin" replace />;
-  if (role === "hospital") return <Navigate to="/hospital" replace />;
-  if (role === "doctor") return <Navigate to="/doctor" replace />;
+  return <Navigate to={getRoleHomePath(role)} replace />;
+}
 
-  return <Navigate to="/" replace />;
+function SessionLoadingScreen() {
+  return (
+    <div className="flex min-h-screen items-center justify-center text-slate-600">
+      Loading session...
+    </div>
+  );
 }
 
 export default function App() {
-  const { role } = useAuth();
+  const { role, loading } = useAuth();
 
   return (
-    <>
-      <Toaster richColors position="top-center" />
+    <Routes>
+      <Route
+        path="/"
+        element={
+          loading ? (
+            <SessionLoadingScreen />
+          ) : role ? (
+            <RedirectByRole role={role} />
+          ) : (
+            <LoginPage />
+          )
+        }
+      />
 
-      <Routes>
-        {/* LOGIN */}
-        <Route
-          path="/"
-          element={role ? <RedirectByRole role={role} /> : <LoginPage />}
-        />
+      <Route path="/master-login" element={<MasterLogin />} />
+      <Route path="/admin-login" element={<AdminLogin />} />
+      <Route path="/hospital-login" element={<HospitalLogin />} />
+      <Route path="/doctor-login" element={<DoctorLogin />} />
 
-        <Route path="/master-login" element={<MasterLogin />} />
-        <Route path="/admin-login" element={<AdminLogin />} />
-        <Route path="/hospital-login" element={<HospitalLogin />} />
-        <Route path="/doctor-login" element={<DoctorLogin />} />
+      <Route path="/register/hospital" element={<HospitalRegister />} />
+      <Route path="/register/doctor" element={<DoctorRegister />} />
 
-        {/* REGISTER */}
-        <Route path="/register/hospital" element={<HospitalRegister />} />
-        <Route path="/register/doctor" element={<DoctorRegister />} />
+      <Route
+        path="/master/*"
+        element={
+          <ProtectedRoute allowedRoles={["master"]}>
+            <MasterRoutes />
+          </ProtectedRoute>
+        }
+      />
 
-        {/* DASHBOARDS */}
-        <Route
-          path="/master/*"
-          element={
-            <ProtectedRoute allowedRoles={["master"]}>
-              <MasterRoutes />
-            </ProtectedRoute>
-          }
-        />
+      <Route
+        path="/admin/*"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <AdminRoutes />
+          </ProtectedRoute>
+        }
+      />
 
-        <Route
-          path="/admin/*"
-          element={
-            <ProtectedRoute allowedRoles={["admin"]}>
-              <AdminRoutes />
-            </ProtectedRoute>
-          }
-        />
+      <Route
+        path="/hospital/*"
+        element={
+          <ProtectedRoute allowedRoles={["hospital"]}>
+            <HospitalRoutes />
+          </ProtectedRoute>
+        }
+      />
 
-        <Route
-          path="/hospital/*"
-          element={
-            <ProtectedRoute allowedRoles={["hospital"]}>
-              <HospitalRoutes />
-            </ProtectedRoute>
-          }
-        />
+      <Route
+        path="/doctor/*"
+        element={
+          <ProtectedRoute allowedRoles={["doctor"]}>
+            <DoctorRoutes />
+          </ProtectedRoute>
+        }
+      />
 
-        <Route
-          path="/doctor/*"
-          element={
-            <ProtectedRoute allowedRoles={["doctor"]}>
-              <DoctorRoutes />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* FALLBACK */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </>
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 }

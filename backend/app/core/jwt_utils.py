@@ -1,13 +1,11 @@
-# app/core/jwt_utils.py
-
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Any, Dict
 from uuid import UUID, uuid4
 
 import jwt
 
 from app.config import settings
-from app.core.time import utcnow, ensure_utc
+from app.core.time import ensure_utc, minutes_from_now, utcnow
 
 ALGORITHM = settings.JWT_ALGORITHM
 ISSUER = settings.JWT_ISSUER
@@ -47,7 +45,7 @@ def create_jwt(payload: dict, minutes: int = 30) -> str:
     p = _sanitize_payload(payload.copy())
 
     p.update({
-        "exp": int((ensure_utc(now) + timedelta(minutes=minutes)).timestamp()),
+        "exp": int(minutes_from_now(minutes).timestamp()),
         "iat": int(ensure_utc(now).timestamp()),
         "jti": str(uuid4()),
         "iss": ISSUER,

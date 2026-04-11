@@ -1,6 +1,3 @@
-#api/v1/auth.py
-
-from datetime import timedelta
 from typing import Optional
 from urllib.parse import unquote
 from uuid import uuid4
@@ -19,7 +16,7 @@ from app.core.rate_limit import (
     record_login_failure,
     verify_rate_limit_login,
 )
-from app.core.time import ensure_utc, utcnow
+from app.core.time import days_from_now, ensure_utc, minutes_from_now, utcnow
 from app.db import crud
 from app.db.crud import refresh_token as refresh_crud
 from app.db.crud import session as session_crud
@@ -57,12 +54,27 @@ def _auth_cookie_kwargs(*, httponly: bool) -> dict:
 
 
 def _delete_cookie(response: Response, key: str) -> None:
-    response.delete_cookie(
+    response.set_cookie(
         key=key,
+        value="",
         path="/",
+        httponly=key != CSRF_COOKIE,
         secure=settings.COOKIE_SECURE,
         samesite=settings.COOKIE_SAMESITE,
+        max_age=0,
+        expires=0,
     )
+
+
+def _clear_role_cookies(response: Response) -> None:
+    for cookie in COOKIE_MAP.values():
+        _delete_cookie(response, cookie)
+
+
+def _clear_auth_cookies(response: Response) -> None:
+    _clear_role_cookies(response)
+    _delete_cookie(response, REFRESH_COOKIE)
+    _delete_cookie(response, CSRF_COOKIE)
 
 
 def set_auth_cookie(response: Response, role: str, token: str) -> None:
@@ -172,7 +184,7 @@ def issue_tokens(
         db,
         session_id=session_id,
         role=role,
-        expires_at=ensure_utc(utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_MINUTES)),
+        expires_at=minutes_from_now(settings.ACCESS_TOKEN_MINUTES),
         user_agent=user_agent,
         ip_address=ip_address,
         csrf_token=csrf_token,
@@ -186,17 +198,14 @@ def issue_tokens(
         db,
         token_hash=hash_token(refresh_token),
         session_id=session_id,
-        expires_at=ensure_utc(utcnow() + timedelta(days=settings.REFRESH_TOKEN_DAYS)),
+        expires_at=days_from_now(settings.REFRESH_TOKEN_DAYS),
         role=role,
         user_agent=user_agent,
         ip_address=ip_address,
         **user_ids,
     )
 
-    # Clean up any stale role cookies before issuing a new session.
-    for cookie in COOKIE_MAP.values():
-        _delete_cookie(response, cookie)
-
+    _clear_role_cookies(response)
     set_auth_cookie(response, role, access_token)
     set_refresh_cookie(response, refresh_token)
     set_csrf_cookie(response, csrf_token)
@@ -204,8 +213,29 @@ def issue_tokens(
 
 
 @router.get("/me")
-def me(payload=Depends(get_current_user)):
-    return payload
+def me(payload=Depends(get_current_user), db: Session = Depends(get_db)):
+    response = JSONResponse(content=payload)
+    session_id = payload.get("session_id")
+
+    if session_id:
+        session = session_crud.get_session(db, session_id)
+        if session and not session.revoked:
+            set_csrf_cookie(response, session.csrf_token)
+            response.headers["X-CSRF-Token"] = session.csrf_token
+
+    return response
+
+
+@router.get("/csrf")
+def get_csrf(request: Request, db: Session = Depends(get_db)):
+    session = _resolve_session_for_request(request, db)
+    if not session or session.revoked:
+        raise HTTPException(status_code=401, detail="Session invalid")
+
+    response = JSONResponse(content={"csrf_token": session.csrf_token})
+    set_csrf_cookie(response, session.csrf_token)
+    response.headers["X-CSRF-Token"] = session.csrf_token
+    return response
 
 
 @router.post("/master/login")
@@ -333,7 +363,7 @@ def refresh(request: Request, response: Response, db: Session = Depends(get_db))
         db,
         token_hash=hash_token(new_token),
         session_id=str(session.id),
-        expires_at=ensure_utc(utcnow() + timedelta(days=settings.REFRESH_TOKEN_DAYS)),
+        expires_at=days_from_now(settings.REFRESH_TOKEN_DAYS),
         role=stored.role,
         user_id=stored.user_id,
         doctor_id=stored.doctor_id,
@@ -342,7 +372,7 @@ def refresh(request: Request, response: Response, db: Session = Depends(get_db))
         ip_address=stored.ip_address,
     )
 
-    session.expires_at = ensure_utc(utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_MINUTES))
+    session.expires_at = minutes_from_now(settings.ACCESS_TOKEN_MINUTES)
     db.add(session)
     db.commit()
 
@@ -362,6 +392,7 @@ def refresh(request: Request, response: Response, db: Session = Depends(get_db))
 
     access_token = jwt_utils.create_jwt(payload, minutes=settings.ACCESS_TOKEN_MINUTES)
 
+    _clear_role_cookies(response)
     set_auth_cookie(response, stored.role, access_token)
     set_refresh_cookie(response, new_token)
     set_csrf_cookie(response, session.csrf_token)
@@ -371,45 +402,31 @@ def refresh(request: Request, response: Response, db: Session = Depends(get_db))
 
 
 @router.post("/logout")
-def logout(request: Request, response: Response, db: Session = Depends(get_db)):
-    # Validate CSRF (session optional for logout)
-    verify_cookie_bound_csrf(request, db, require_session=False)
+def logout(request: Request, db: Session = Depends(get_db)):
+    response = JSONResponse(content={"message": "Logged out successfully"})
+    _clear_auth_cookies(response)
 
-    # Revoke refresh token and its associated session
-    refresh_token = request.cookies.get(REFRESH_COOKIE)
-    if refresh_token:
-        try:
-            stored = refresh_crud.get_refresh_token(
-                db, hash_token(refresh_token)
-            )
+    try:
+        refresh_token = request.cookies.get(REFRESH_COOKIE)
+        if refresh_token:
+            stored = refresh_crud.get_refresh_token(db, hash_token(refresh_token))
             if stored:
-                # Revoke refresh token
-                refresh_crud.revoke_refresh_token(
-                    db, hash_token(refresh_token)
-                )
-
-                # Revoke linked session
+                refresh_crud.revoke_refresh_token(db, hash_token(refresh_token))
                 if stored.session_id:
                     session_crud.revoke_session(db, stored.session_id)
-        except Exception:
-            db.rollback()
 
-    # Revoke session from access token if available
-    try:
-        payload = get_jwt_payload(request, db)
-        session_id = payload.get("session_id")
-        if session_id:
-            session_crud.revoke_session(db, session_id)
-    except HTTPException:
-        session = _resolve_session_for_request(request, db)
-        if session:
-            session_crud.revoke_session(db, session.id)
+        try:
+            payload = get_jwt_payload(request, db)
+            session_id = payload.get("session_id")
+            if session_id:
+                session_crud.revoke_session(db, session_id)
+        except HTTPException:
+            session = _resolve_session_for_request(request, db)
+            if session:
+                session_crud.revoke_session(db, session.id)
 
-    # Delete all cookies
-    for cookie in COOKIE_MAP.values():
-        _delete_cookie(response, cookie)
-    _delete_cookie(response, REFRESH_COOKIE)
-    _delete_cookie(response, CSRF_COOKIE)
+        db.commit()
+    except Exception:
+        db.rollback()
 
-    db.commit()
-    return {"message": "Logged out successfully"}
+    return response

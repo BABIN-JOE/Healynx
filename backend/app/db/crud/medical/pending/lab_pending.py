@@ -1,5 +1,4 @@
-from app.core.time import utcnow, ensure_utc
-from datetime import datetime, timedelta
+from app.core.time import entry_expiry_time
 from uuid import UUID
 from sqlmodel import Session
 from app.db import models
@@ -36,7 +35,7 @@ def create_lab_pending(
 
         test_date=test_date,
 
-        expires_at=ensure_utc(utcnow() + timedelta(hours=24)),
+        expires_at=entry_expiry_time(),
     )
 
     db.add(obj)

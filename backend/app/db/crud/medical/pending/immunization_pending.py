@@ -1,7 +1,6 @@
-from app.core.time import utcnow, ensure_utc
+from app.core.time import entry_expiry_time
 from sqlmodel import Session
 from app.db import models
-from datetime import datetime, timedelta
 from uuid import UUID
 
 
@@ -33,7 +32,7 @@ def create_immunization_pending(
         dosage=dosage,
         notes=notes,
 
-        expires_at=ensure_utc(utcnow() + timedelta(hours=24)),
+        expires_at=entry_expiry_time(),
     )
 
     db.add(obj)

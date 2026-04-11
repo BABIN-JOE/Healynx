@@ -1,5 +1,3 @@
-// frontend/src/contexts/AuthContext.tsx
-
 import {
   createContext,
   useContext,
@@ -11,10 +9,11 @@ import {
 
 import api, {
   clearClientAuthState,
-  syncCsrfTokenFromCookies,
-  setLogoutInProgress,
   setAuthInitialization,
+  setLogoutInProgress,
+  syncCsrfTokenFromCookies,
 } from "../api/apiClient";
+import { shouldResetSessionOnLaunch, startTabSession } from "../auth/tabSession";
 
 // ------------------------------------------------------
 // TYPES
@@ -38,62 +37,107 @@ const AuthContext = createContext<AuthContextType>({
   logout: async () => {},
 });
 
-const INACTIVITY_LIMIT = 30 * 60 * 1000; // 30 minutes
+const LOGIN_SYNC_KEY = "healynx_login";
+const LOGOUT_SYNC_KEY = "healynx_logout";
+const INACTIVITY_LIMIT = 30 * 60 * 1000;
 
-// ------------------------------------------------------
-// AUTH PROVIDER
-// ------------------------------------------------------
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<any | null>(null);
   const [role, setRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const inactivityTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasLoaded = useRef(false);
+  const inactivityTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // ------------------------------------------------------
-  // CLEAR AUTH STATE
-  // ------------------------------------------------------
   const clearAuthState = () => {
     clearClientAuthState();
     setUser(null);
     setRole(null);
-    localStorage.removeItem("healynx_active_role");
   };
 
-  // ------------------------------------------------------
-  // LOAD SESSION (PERSIST AFTER REFRESH)
-  // ------------------------------------------------------
+  const fetchCurrentUser = async () => {
+    const response = await api.get("/api/v1/auth/me", {
+      withCredentials: true,
+    });
+
+    return response.data;
+  };
+
   const loadSession = async () => {
     setLoading(true);
     setAuthInitialization(true);
     syncCsrfTokenFromCookies();
 
     try {
-      const res = await api.get("/api/v1/auth/me", {
-        withCredentials: true,
-      });
-
-      setUser(res.data);
-      setRole(res.data.role);
-      localStorage.setItem("healynx_active_role", res.data.role);
+      const sessionUser = await fetchCurrentUser();
+      setUser(sessionUser);
+      setRole(sessionUser.role);
+      return sessionUser;
     } catch {
-      clearAuthState();
+      try {
+        await api.get("/api/v1/auth/csrf", {
+          withCredentials: true,
+        });
+
+        await api.post(
+          "/api/v1/auth/refresh",
+          {},
+          { withCredentials: true }
+        );
+
+        const refreshedUser = await fetchCurrentUser();
+        setUser(refreshedUser);
+        setRole(refreshedUser.role);
+        return refreshedUser;
+      } catch {
+        clearAuthState();
+        return null;
+      }
     } finally {
       setAuthInitialization(false);
       setLoading(false);
     }
   };
 
+  const resetStaleBrowserSession = async () => {
+    syncCsrfTokenFromCookies();
+
+    try {
+      await api.post(
+        "/api/v1/auth/logout",
+        {},
+        { withCredentials: true }
+      );
+    } catch {
+      // Best effort cleanup for stale browser sessions.
+    } finally {
+      clearAuthState();
+    }
+  };
+
   useEffect(() => {
-    if (hasLoaded.current) return;
+    if (hasLoaded.current) {
+      return;
+    }
+
     hasLoaded.current = true;
-    loadSession();
+
+    const resetSessionOnLaunch = shouldResetSessionOnLaunch();
+    const stopTabSession = startTabSession();
+
+    void (async () => {
+      if (resetSessionOnLaunch) {
+        await resetStaleBrowserSession();
+      }
+
+      await loadSession();
+    })();
+
+    return () => {
+      stopTabSession();
+    };
   }, []);
 
-  // ------------------------------------------------------
-  // LOGIN
-  // ------------------------------------------------------
   const login = async (
     role: "master" | "admin" | "hospital" | "doctor",
     credentials: any
@@ -110,14 +154,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     await loadSession();
-
-    // Sync login across tabs
-    localStorage.setItem("healynx_login", Date.now().toString());
+    window.localStorage.setItem(LOGIN_SYNC_KEY, Date.now().toString());
   };
 
-  // ------------------------------------------------------
-  // LOGOUT
-  // ------------------------------------------------------
   const logout = async () => {
     syncCsrfTokenFromCookies();
     setLogoutInProgress(true);
@@ -129,31 +168,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         { withCredentials: true }
       );
     } catch {
-      // Ignore errors if session is already invalid
+      // The client state still needs to be cleared even if the server session is already gone.
     } finally {
       clearAuthState();
-
-      // Sync logout across tabs
-      localStorage.setItem("healynx_logout", Date.now().toString());
-
-      setLogoutInProgress(false);
-
+      window.localStorage.setItem(LOGOUT_SYNC_KEY, Date.now().toString());
       window.location.replace("/");
     }
   };
 
-  // ------------------------------------------------------
-  // CROSS-TAB AUTH SYNCHRONIZATION
-  // ------------------------------------------------------
   useEffect(() => {
     const handleStorageChange = (event: StorageEvent) => {
-      if (event.key === "healynx_logout") {
+      if (event.key === LOGOUT_SYNC_KEY) {
         clearAuthState();
         window.location.replace("/");
+        return;
       }
 
-      if (event.key === "healynx_login") {
-        loadSession();
+      if (event.key === LOGIN_SYNC_KEY) {
+        void loadSession();
       }
     };
 
@@ -164,26 +196,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  // ------------------------------------------------------
-  // PREVENT MULTIPLE ROLES ON SAME DEVICE
-  // ------------------------------------------------------
   useEffect(() => {
-    if (!role) return;
-
-    const activeRole = localStorage.getItem("healynx_active_role");
-
-    if (activeRole && activeRole !== role) {
-      logout();
-    } else {
-      localStorage.setItem("healynx_active_role", role);
+    if (!user) {
+      return;
     }
-  }, [role]);
-
-  // ------------------------------------------------------
-  // AUTO LOGOUT AFTER INACTIVITY
-  // ------------------------------------------------------
-  useEffect(() => {
-    if (!user) return;
 
     const resetTimer = () => {
       if (inactivityTimer.current) {
@@ -191,15 +207,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       inactivityTimer.current = setTimeout(() => {
-        logout();
+        void logout();
       }, INACTIVITY_LIMIT);
     };
 
     const events = ["mousemove", "keydown", "click", "scroll"];
-
-    events.forEach((event) =>
-      window.addEventListener(event, resetTimer)
-    );
+    events.forEach((eventName) => {
+      window.addEventListener(eventName, resetTimer);
+    });
 
     resetTimer();
 
@@ -208,15 +223,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         clearTimeout(inactivityTimer.current);
       }
 
-      events.forEach((event) =>
-        window.removeEventListener(event, resetTimer)
-      );
+      events.forEach((eventName) => {
+        window.removeEventListener(eventName, resetTimer);
+      });
     };
   }, [user]);
 
-  // ------------------------------------------------------
-  // CONTEXT PROVIDER
-  // ------------------------------------------------------
   return (
     <AuthContext.Provider value={{ user, role, loading, login, logout }}>
       {children}
@@ -224,7 +236,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
-// ------------------------------------------------------
-// CUSTOM HOOK
-// ------------------------------------------------------
 export const useAuth = () => useContext(AuthContext);

@@ -1,7 +1,6 @@
-from app.core.time import utcnow
+from app.core.time import calculate_age, parse_date_string, utcnow
 from fastapi import APIRouter, Depends, HTTPException, Body, Request
 from sqlmodel import Session, select
-from datetime import date, datetime
 from uuid import UUID
 
 from app.deps import get_db
@@ -413,13 +412,9 @@ def get_pending_entry_details(
                         dob = patient.dob
 
                         if isinstance(dob, str):
-                            dob = datetime.strptime(dob, "%Y-%m-%d").date()
+                            dob = parse_date_string(dob)
 
-                        today = date.today()
-
-                        patient_age = today.year - dob.year - (
-                            (today.month, today.day) < (dob.month, dob.day)
-                        )
+                        patient_age = calculate_age(dob)
 
                     except Exception:
                         patient_age = None

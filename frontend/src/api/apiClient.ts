@@ -178,6 +178,7 @@ api.interceptors.response.use(
       url.includes("/auth/admin/login") ||
       url.includes("/auth/hospital/login") ||
       url.includes("/auth/doctor/login") ||
+      url.includes("/auth/csrf") ||
       url.includes("/auth/refresh") ||
       url.includes("/auth/logout") ||
       url.includes("/auth/me");
