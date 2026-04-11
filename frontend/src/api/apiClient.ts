@@ -37,9 +37,7 @@ let csrfToken: string | null = readCookie("csrf_token");
 
 export function syncCsrfTokenFromCookies() {
   const cookieToken = readCookie("csrf_token");
-  if (cookieToken) {
-    csrfToken = cookieToken;
-  }
+  csrfToken = cookieToken || null;
 }
 
 export function getCsrfToken() {
@@ -67,6 +65,16 @@ export function setLogoutInProgress(value: boolean) {
 }
 
 // ======================================================
+// 🚫 INITIAL AUTH CHECK FLAG
+// Prevents refresh during initial session validation
+// ======================================================
+let isInitializingAuth = false;
+
+export function setAuthInitialization(value: boolean) {
+  isInitializingAuth = value;
+}
+
+// ======================================================
 // 🚀 AXIOS INSTANCE
 // ======================================================
 const api = axios.create({
@@ -75,7 +83,7 @@ const api = axios.create({
     "Content-Type": "application/json",
   },
   timeout: 15000,
-  withCredentials: true, // Required for cookie-based authentication
+  withCredentials: true,
 });
 
 // ======================================================
@@ -138,7 +146,7 @@ api.interceptors.response.use(
     // Update CSRF token from response headers if present
     const token = response.headers["x-csrf-token"];
     if (token) {
-      csrfToken = token;
+      csrfToken = token as string;
     } else {
       syncCsrfTokenFromCookies();
     }
@@ -154,12 +162,17 @@ api.interceptors.response.use(
     const status = error.response.status;
     const url = originalRequest?.url || "";
 
-    // 🚫 Prevent refresh if logout is in progress
+    // 🚫 Do not refresh during logout
     if (isLoggingOut) {
       return Promise.reject(error);
     }
 
-    // Skip refresh for authentication endpoints
+    // 🚫 Do not refresh during initial auth check
+    if (isInitializingAuth) {
+      return Promise.reject(error);
+    }
+
+    // Skip refresh for authentication-related endpoints
     const skipRefresh =
       url.includes("/auth/master/login") ||
       url.includes("/auth/admin/login") ||
@@ -180,7 +193,7 @@ api.interceptors.response.use(
 
     originalRequest._retry = true;
 
-    // Queue requests during refresh
+    // Queue requests while refresh is in progress
     if (isRefreshing) {
       return new Promise((resolve, reject) => {
         failedQueue.push({

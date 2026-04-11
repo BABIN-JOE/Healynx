@@ -1,3 +1,5 @@
+// frontend/src/contexts/AuthContext.tsx
+
 import {
   createContext,
   useContext,
@@ -11,6 +13,7 @@ import api, {
   clearClientAuthState,
   syncCsrfTokenFromCookies,
   setLogoutInProgress,
+  setAuthInitialization,
 } from "../api/apiClient";
 
 // ------------------------------------------------------
@@ -55,6 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     clearClientAuthState();
     setUser(null);
     setRole(null);
+    localStorage.removeItem("healynx_active_role");
   };
 
   // ------------------------------------------------------
@@ -62,6 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ------------------------------------------------------
   const loadSession = async () => {
     setLoading(true);
+    setAuthInitialization(true);
     syncCsrfTokenFromCookies();
 
     try {
@@ -71,9 +76,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       setUser(res.data);
       setRole(res.data.role);
+      localStorage.setItem("healynx_active_role", res.data.role);
     } catch {
       clearAuthState();
     } finally {
+      setAuthInitialization(false);
       setLoading(false);
     }
   };
@@ -122,7 +129,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         { withCredentials: true }
       );
     } catch {
-      // Ignore failures; session may already be invalidated
+      // Ignore errors if session is already invalid
     } finally {
       clearAuthState();
 
@@ -131,9 +138,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       setLogoutInProgress(false);
 
-      if (typeof window !== "undefined") {
-        window.location.replace("/");
-      }
+      window.location.replace("/");
     }
   };
 
