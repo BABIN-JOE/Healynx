@@ -1,6 +1,6 @@
 // src/components/ui/ProtectedRoute.tsx
 
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 
 export default function ProtectedRoute({
@@ -11,26 +11,33 @@ export default function ProtectedRoute({
   allowedRoles: string[];
 }) {
   const { user, role, loading } = useAuth();
+  const location = useLocation();
 
-  // 🔹 1. Wait until auth check completes
+  // 🔹 Wait until authentication check completes
   if (loading) {
     return (
-      <div className="p-6 w-full text-center text-slate-600">
+      <div className="flex items-center justify-center h-screen text-slate-600">
         Loading session...
       </div>
     );
   }
 
-  // 🔹 2. Not authenticated → go to login
+  // 🔹 Not authenticated → Redirect to login
   if (!user || !role) {
-    return <Navigate to="/" replace />;
+    return (
+      <Navigate
+        to="/"
+        replace
+        state={{ from: location.pathname }}
+      />
+    );
   }
 
-  // 🔹 3. Role not allowed → also redirect
+  // 🔹 Role not authorized
   if (!allowedRoles.includes(role)) {
     return <Navigate to="/" replace />;
   }
 
-  // 🔹 4. Authorized
+  // 🔹 Authorized
   return children;
 }
