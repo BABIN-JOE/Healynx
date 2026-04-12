@@ -66,18 +66,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loadSession = async () => {
     setLoading(true);
     setAuthInitialization(true);
-    syncCsrfTokenFromCookies();
 
     try {
       const sessionUser = await fetchCurrentUser();
+      syncCsrfTokenFromCookies();
       setUser(sessionUser);
       setRole(sessionUser.role);
       return sessionUser;
     } catch {
       try {
+        // Re-sync CSRF token by calling the dedicated endpoint
         await api.get("/api/v1/auth/csrf", {
           withCredentials: true,
         });
+        
+        // After getting CSRF from endpoint, sync it from cookies
+        syncCsrfTokenFromCookies();
 
         await api.post(
           "/api/v1/auth/refresh",
@@ -86,6 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         );
 
         const refreshedUser = await fetchCurrentUser();
+        syncCsrfTokenFromCookies();
         setUser(refreshedUser);
         setRole(refreshedUser.role);
         return refreshedUser;
@@ -152,6 +157,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await api.post(endpointMap[role], credentials, {
       withCredentials: true,
     });
+
+    // After login, immediately sync CSRF token
+    syncCsrfTokenFromCookies();
+
+    // Explicitly fetch CSRF token from server and re-sync
+    try {
+      await api.get("/api/v1/auth/csrf", {
+        withCredentials: true,
+      });
+      syncCsrfTokenFromCookies();
+    } catch {
+      // If CSRF endpoint fails, just proceed with what we have
+    }
 
     await loadSession();
     window.localStorage.setItem(LOGIN_SYNC_KEY, Date.now().toString());

@@ -228,11 +228,16 @@ def me(payload=Depends(get_current_user), db: Session = Depends(get_db)):
 
 @router.get("/csrf")
 def get_csrf(request: Request, db: Session = Depends(get_db)):
+    """
+    Returns the current session's CSRF token.
+    Frontend MUST call this after login to sync CSRF token.
+    """
     session = _resolve_session_for_request(request, db)
     if not session or session.revoked:
         raise HTTPException(status_code=401, detail="Session invalid")
 
     response = JSONResponse(content={"csrf_token": session.csrf_token})
+    # Ensure token is set as accessible cookie (httpOnly=False) and header
     set_csrf_cookie(response, session.csrf_token)
     response.headers["X-CSRF-Token"] = session.csrf_token
     return response

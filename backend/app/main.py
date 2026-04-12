@@ -99,19 +99,21 @@ async def csrf_protection_middleware(request: Request, call_next):
         request.method in STATE_CHANGING_METHODS
         and request.url.path.startswith("/api/v1/")
         and request.url.path not in CSRF_EXEMPT_PATHS
-        and request_has_auth_cookie(request)
     ):
-        try:
-            with Session(engine) as db:
-                verify_csrf_tokens_direct(request, db)
-        except HTTPException as e:
-            return JSONResponse(status_code=e.status_code, content={"detail": e.detail})
-        except Exception:
-            logger.exception("Unexpected CSRF middleware failure")
-            return JSONResponse(
-                status_code=403,
-                content={"detail": "CSRF verification failed"},
-            )
+        # Only verify CSRF if user is authenticated
+        if request_has_auth_cookie(request):
+            try:
+                with Session(engine) as db:
+                    verify_csrf_tokens_direct(request, db)
+            except HTTPException as e:
+                logger.warning(f"CSRF validation failed: {e.detail}")
+                return JSONResponse(status_code=e.status_code, content={"detail": e.detail})
+            except Exception as exc:
+                logger.exception(f"CSRF middleware error: {exc}")
+                return JSONResponse(
+                    status_code=403,
+                    content={"detail": "CSRF verification failed"},
+                )
 
     return await call_next(request)
 
