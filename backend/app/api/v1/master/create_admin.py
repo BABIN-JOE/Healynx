@@ -1,6 +1,6 @@
 # app/api/v1/master/create_admin.py
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlmodel import Session, select
 from app.deps import get_db
 from app.core.rbac import require_role, Role
@@ -17,6 +17,7 @@ router = APIRouter()
 @router.post("/admins/create")
 def create_admin(
     body: MasterCreate,
+    request: Request,
     payload=Depends(require_role([Role.MASTER])),
     db = Depends(get_db),
 ):
@@ -99,15 +100,19 @@ def create_admin(
         # generic
         raise HTTPException(status_code=500, detail="Failed to create admin")
 
-    # Logging
-    log_action(
-        db,
-        action_type="master.create_admin",
-        user_role="master",
-        user_id=payload.get("user_id"),
-        target_entity="admin",
-        target_entity_id=str(admin.id),
-        ip=request.client.host if request else None
-    )
+    # Logging (wrapped in try-except to prevent endpoint failure if logging fails)
+    try:
+        log_action(
+            db,
+            action_type="master.create_admin",
+            user_role="master",
+            user_id=payload.get("user_id"),
+            target_entity="admin",
+            target_entity_id=str(admin.id),
+            ip=request.client.host if request else None
+        )
+    except Exception as log_error:
+        # Log the error but don't fail the endpoint
+        print(f"Warning: Failed to log admin creation: {log_error}")
 
     return {"id": str(admin.id), "message": "Admin created successfully"}

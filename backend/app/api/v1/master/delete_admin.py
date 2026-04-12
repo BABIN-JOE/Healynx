@@ -21,7 +21,8 @@ def delete_admin(
     if not admin:
         raise HTTPException(404, "Admin not found")
 
-    admin.is_active = False
+    # Hard delete - remove admin from database completely
+    db.delete(admin)
     db.commit()
 
-    return {"message": "Admin soft deleted", "id": admin.id}
+    return {"message": "Admin deleted successfully", "id": admin.id}

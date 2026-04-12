@@ -274,6 +274,10 @@ def admin_login(request: Request, credentials: LoginSchema, db: Session = Depend
     if not user or not security.verify_password(user.password_hash, credentials.password):
         _issue_invalid_login(request, identifier)
 
+    # Check if admin is deleted or blocked
+    if not user.is_active or user.is_blocked:
+        _issue_invalid_login(request, identifier)
+
     clear_login_failures(request, identifier)
     session_id = str(uuid4())
     payload = {
@@ -300,6 +304,10 @@ def hospital_login(
     if not hospital or not security.verify_password(hospital.password_hash, credentials.password):
         _issue_invalid_login(request, identifier)
 
+    # Check if hospital is deleted/blocked
+    if not hospital.is_active:
+        _issue_invalid_login(request, identifier)
+
     clear_login_failures(request, identifier)
     session_id = str(uuid4())
     payload = {
@@ -320,6 +328,10 @@ def doctor_login(request: Request, credentials: LoginSchema, db: Session = Depen
 
     doctor = crud.get_doctor_by_license(db, credentials.username)
     if not doctor or not security.verify_password(doctor.password_hash, credentials.password):
+        _issue_invalid_login(request, identifier)
+
+    # Check if doctor is deleted
+    if not doctor.is_active:
         _issue_invalid_login(request, identifier)
 
     clear_login_failures(request, identifier)
