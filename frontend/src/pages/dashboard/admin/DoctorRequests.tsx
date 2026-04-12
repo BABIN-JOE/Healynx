@@ -16,7 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from "../../../components/ui/table";
-import { Badge } from "../../../components/ui/badge";
+import { Skeleton } from "../../../components/ui/skeleton";
 import { toast } from "sonner";
 import AdminService, {
   DoctorRequestSummary,
@@ -31,7 +31,7 @@ export default function DoctorRequests() {
   const loadRequests = async () => {
     try {
       setLoading(true);
-      const data = await AdminService.getDoctorRequests();
+      const data = await AdminService.getDoctorRequests("pending");
 
       // Ensure full_name exists
       const normalized = data.map((d: any) => ({
@@ -89,7 +89,7 @@ export default function DoctorRequests() {
 
         <CardContent>
           {loading ? (
-            <p>Loading...</p>
+            <LoadingTable />
           ) : requests.length === 0 ? (
             <p className="text-center text-muted-foreground py-6">
               No doctor requests found
@@ -103,7 +103,6 @@ export default function DoctorRequests() {
                   <TableHead>License</TableHead>
                   <TableHead>Phone</TableHead>
                   <TableHead>Email</TableHead>
-                  <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -117,35 +116,30 @@ export default function DoctorRequests() {
                     <TableCell>{req.phone || "—"}</TableCell>
                     <TableCell>{req.email || "—"}</TableCell>
 
-                    <TableCell>
-                      <Badge variant="default">{req.status}</Badge>
-                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button size="sm" onClick={() => handleApprove(req.id)}>
+                          Approve
+                        </Button>
 
-                    <TableCell className="text-right space-x-2">
-                      <Button
-                        size="sm"
-                        onClick={() =>
-                          navigate(`/admin/doctor-requests/${req.id}/view`)
-                        }
-                      >
-                        View
-                      </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleReject(req.id)}
+                        >
+                          Reject
+                        </Button>
 
-                      {req.status === "pending" && (
-                        <>
-                          <Button size="sm" onClick={() => handleApprove(req.id)}>
-                            Approve
-                          </Button>
-
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => handleReject(req.id)}
-                          >
-                            Reject
-                          </Button>
-                        </>
-                      )}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() =>
+                            navigate(`/admin/doctor-requests/${req.id}/view`)
+                          }
+                        >
+                          View
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -154,6 +148,21 @@ export default function DoctorRequests() {
           )}
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function LoadingTable() {
+  return (
+    <div className="space-y-3">
+      {[1, 2, 3, 4].map((i) => (
+        <div key={i} className="flex items-center gap-4">
+          <Skeleton className="h-6 w-40" />
+          <Skeleton className="h-6 w-32" />
+          <Skeleton className="h-6 w-24" />
+          <Skeleton className="h-6 w-20" />
+        </div>
+      ))}
     </div>
   );
 }

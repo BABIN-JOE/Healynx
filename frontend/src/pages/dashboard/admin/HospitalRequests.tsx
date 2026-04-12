@@ -3,8 +3,6 @@ import { useEffect, useState } from "react";
 import { Button } from "../../../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../components/ui/table";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select";
-import { Badge } from "../../../components/ui/badge";
 import { Skeleton } from "../../../components/ui/skeleton";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -13,14 +11,12 @@ import AdminService, { HospitalRequestSummary } from "../../../services/AdminSer
 export default function HospitalRequests() {
   const [requests, setRequests] = useState<HospitalRequestSummary[]>([]);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState<string>("pending");
   const navigate = useNavigate();
 
   const loadRequests = async () => {
     try {
       setLoading(true);
-      const status = statusFilter === "all" ? undefined : statusFilter;
-      const data = await AdminService.getHospitalRequests(status);
+      const data = await AdminService.getHospitalRequests("pending");
       setRequests(data);
     } catch (err) {
       console.error(err);
@@ -32,7 +28,7 @@ export default function HospitalRequests() {
 
   useEffect(() => {
     loadRequests();
-  }, [statusFilter]);
+  }, []);
 
   const handleApprove = async (id: string) => {
     try {
@@ -57,20 +53,8 @@ export default function HospitalRequests() {
   return (
     <div className="p-6">
       <Card className="shadow-sm">
-        <CardHeader className="flex items-center justify-between">
+        <CardHeader>
           <CardTitle className="text-xl font-semibold">Hospital Requests</CardTitle>
-
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="Filter by status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="approved">Approved</SelectItem>
-              <SelectItem value="rejected">Rejected</SelectItem>
-              <SelectItem value="all">All</SelectItem>
-            </SelectContent>
-          </Select>
         </CardHeader>
 
         <CardContent>
@@ -85,7 +69,6 @@ export default function HospitalRequests() {
                   <TableHead>Hospital Name</TableHead>
                   <TableHead>License Number</TableHead>
                   <TableHead>Owner</TableHead>
-                  <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -97,40 +80,24 @@ export default function HospitalRequests() {
                     <TableCell>{req.license_number}</TableCell>
                     <TableCell>{req.owner_name}</TableCell>
 
-                    <TableCell>
-                      <Badge
-                        variant={
-                          req.status === "pending"
-                            ? "default"
-                            : req.status === "approved"
-                            ? "success"
-                            : "destructive"
-                        }
-                      >
-                        {req.status}
-                      </Badge>
-                    </TableCell>
-
                     <TableCell className="text-right">
-                      {req.status === "pending" && (
-                        <div className="flex justify-end gap-2">
-                          <Button size="sm" onClick={() => handleApprove(req.id)}>
-                            Approve
-                          </Button>
+                      <div className="flex justify-end gap-2">
+                        <Button size="sm" onClick={() => handleApprove(req.id)}>
+                          Approve
+                        </Button>
 
-                          <Button size="sm" variant="destructive" onClick={() => handleReject(req.id)}>
-                            Reject
-                          </Button>
+                        <Button size="sm" variant="destructive" onClick={() => handleReject(req.id)}>
+                          Reject
+                        </Button>
 
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => navigate(`/admin/hospital-requests/${req.id}/view`)}
-                          >
-                            View
-                          </Button>
-                        </div>
-                      )}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => navigate(`/admin/hospital-requests/${req.id}/view`)}
+                        >
+                          View
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
