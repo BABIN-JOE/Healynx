@@ -6,7 +6,7 @@ import { Outlet } from "react-router-dom";
 export default function DashboardLayout({
   links,
 }: {
-  links: { label: string; to: string; icon?: JSX.Element }[];
+  links: { label: string; to: string; icon?: JSX.Element; disabled?: boolean }[];
 }) {
   return (
     <div className="flex h-screen overflow-hidden">

@@ -4,7 +4,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "../../../contexts/AuthContext";
 
 interface SidebarProps {
-  links: { label: string; to: string; icon?: JSX.Element }[];
+  links: { label: string; to: string; icon?: JSX.Element; disabled?: boolean }[];
 }
 
 export default function Sidebar({ links }: SidebarProps) {
@@ -32,6 +32,19 @@ export default function Sidebar({ links }: SidebarProps) {
       <div className="flex-1 overflow-y-auto mt-4">
         {links.map((item) => {
           const exact = isRootRoute(item.to);
+
+          if (item.disabled) {
+            return (
+              <div
+                key={item.to}
+                className="flex items-center gap-3 px-5 py-3 text-sm text-gray-400 cursor-not-allowed opacity-50"
+                title="Join a hospital to access this feature"
+              >
+                {item.icon && <span className="h-5 w-5">{item.icon}</span>}
+                <span>{item.label}</span>
+              </div>
+            );
+          }
 
           return (
             <NavLink
