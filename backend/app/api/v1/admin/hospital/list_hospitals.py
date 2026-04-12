@@ -38,6 +38,22 @@ def list_hospitals(
             except:
                 address = None
 
+        # decrypt email
+        email = None
+        if h.email_encrypted:
+            try:
+                email = aesgcm_decrypt_str(h.email_encrypted)
+            except:
+                email = None
+
+        # decrypt phone
+        phone = None
+        if h.phone_encrypted:
+            try:
+                phone = aesgcm_decrypt_str(h.phone_encrypted)
+            except:
+                phone = None
+
         # return clean and correct structure
         result.append({
             "id": h.id,
@@ -49,9 +65,9 @@ def list_hospitals(
             "owner_middle_name": h.owner_middle_name,
             "owner_last_name": h.owner_last_name,
 
-            # hide encrypted PII
-            "email": None,
-            "phone": None,
+            # decrypted PII
+            "email": email,
+            "phone": phone,
             "owner_aadhaar": None,
 
             "address": address,

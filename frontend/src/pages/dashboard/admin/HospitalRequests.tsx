@@ -6,13 +6,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select";
 import { Skeleton } from "../../../components/ui/skeleton";
 import { toast } from "sonner";
-import AdminService, { HospitalRequestSummary } from "../../../services/AdminService";
-import { Badge } from "../../../components/ui/badge";
+import { useNavigate } from "react-router-dom";
 
 export default function HospitalRequests() {
   const [requests, setRequests] = useState<HospitalRequestSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("pending");
+  const navigate = useNavigate();
 
   const loadRequests = async () => {
     try {
@@ -117,6 +117,14 @@ export default function HospitalRequests() {
 
                           <Button size="sm" variant="destructive" onClick={() => handleReject(req.id)}>
                             Reject
+                          </Button>
+
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => navigate(`/admin/hospital-requests/${req.id}/view`)}
+                          >
+                            View
                           </Button>
                         </div>
                       )}

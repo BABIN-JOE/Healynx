@@ -14,6 +14,7 @@ from app.api.v1.admin.doctor.update_doctor import router as update_doctor_router
 
 from app.api.v1.admin.patient.add_patient import router as add_patient_router
 from app.api.v1.admin.patient.update_patient import router as update_patient_router
+from app.api.v1.admin.patient.delete_patient import router as delete_patient_router
 
 from app.api.v1.admin.change_password import router as change_password_router
 
@@ -49,6 +50,7 @@ router.include_router(delete_doctor_router)
 
 router.include_router(add_patient_router)
 router.include_router(update_patient_router)
+router.include_router(delete_patient_router)
 
 router.include_router(change_password_router)
 
