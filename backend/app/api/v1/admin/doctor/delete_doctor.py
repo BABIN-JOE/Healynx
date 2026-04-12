@@ -29,7 +29,7 @@ def delete_doctor(
         db,
         action_type="admin.soft_delete_doctor",
         user_role="admin",
-        user_id=payload["user_id"],
+        user_id=payload["admin_id"],
         target_entity="doctors",
         target_entity_id=doctor.id
     )

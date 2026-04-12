@@ -29,7 +29,7 @@ def delete_hospital(
         db,
         action_type="admin.soft_delete_hospital",
         user_role="admin",
-        user_id=payload["user_id"],
+        user_id=payload["admin_id"],
         target_entity="hospitals",
         target_entity_id=hospital.id
     )

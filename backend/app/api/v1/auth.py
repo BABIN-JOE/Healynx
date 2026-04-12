@@ -274,9 +274,14 @@ def admin_login(request: Request, credentials: LoginSchema, db: Session = Depend
     if not user or not security.verify_password(user.password_hash, credentials.password):
         _issue_invalid_login(request, identifier)
 
-    # Check if admin is deleted or blocked
-    if not user.is_active or user.is_blocked:
+    # Check if admin is deleted
+    if not user.is_active:
         _issue_invalid_login(request, identifier)
+
+    # Check if admin is blocked
+    if user.is_blocked:
+        record_login_failure(request, identifier)
+        raise HTTPException(status_code=403, detail="Your account is blocked. Please contact support.")
 
     clear_login_failures(request, identifier)
     session_id = str(uuid4())
