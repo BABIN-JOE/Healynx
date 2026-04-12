@@ -7,6 +7,7 @@ from app.deps import get_db
 from app.core.rbac import require_role, Role
 from app.core import crypto
 from app.db.models import Admin as AdminModel
+from app.db import crud
 
 router = APIRouter()
 
@@ -31,8 +32,7 @@ def change_password(
     if len(new_password) < 8:
         raise HTTPException(400, "Password must be at least 8 characters")
 
-    admin.password_hash = crypto.hash_password(new_password)
-    db.add(admin)
-    db.commit()
+    new_hash = crypto.hash_password(new_password)
+    crud.update_admin_password(db, payload["admin_id"], new_hash)
 
     return {"message": "Password updated successfully"}

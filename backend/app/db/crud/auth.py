@@ -52,3 +52,20 @@ def update_master_password(
     session.refresh(master)   # ✅ good practice
 
     return master
+
+
+def update_admin_password(
+    session: Session,
+    admin_id: UUID,
+    new_hash: str
+):
+    admin = session.get(models.Admin, admin_id)
+    if not admin:
+        return None
+
+    admin.password_hash = new_hash
+    session.add(admin)
+    session.commit()
+    session.refresh(admin)   # ✅ good practice
+
+    return admin

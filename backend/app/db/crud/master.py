@@ -1,4 +1,5 @@
 from sqlmodel import Session, select
+from uuid import UUID
 from app.db import models
 
 
@@ -8,6 +9,10 @@ def create_master(session: Session, **kwargs):
     session.commit()
     session.refresh(obj)
     return obj
+
+
+def get_master(session: Session, master_id: UUID):
+    return session.get(models.Master, master_id)
 
 
 def get_master_by_username(session: Session, username: str):
