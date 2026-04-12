@@ -20,6 +20,7 @@ def update_hospital(
     data: dict,
     payload=Depends(require_role([Role.ADMIN])),
     db: Session = Depends(get_db),
+    request: Request = None
 ):
     hospital = db.get(Hospital, hospital_id)
 

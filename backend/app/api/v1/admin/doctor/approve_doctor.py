@@ -16,6 +16,7 @@ def approve_doctor(
     req_id: str,
     payload=Depends(require_role([Role.ADMIN])),
     db = Depends(get_db)):
+    request: Request = None
     req = crud.get_doctor_request(db, req_id)
 
     if not req:

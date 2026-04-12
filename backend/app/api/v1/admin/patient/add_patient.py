@@ -17,6 +17,7 @@ def add_patient(
     body: PatientCreate,
     payload=Depends(require_role([Role.ADMIN])),
     db = Depends(get_db)):
+    request: Request = None
     valid_groups = {"A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"}
 
     if body.blood_group not in valid_groups:

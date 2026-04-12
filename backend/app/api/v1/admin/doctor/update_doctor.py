@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlmodel import Session
 import json
 
@@ -16,6 +16,7 @@ router = APIRouter()
 def update_doctor(
     doctor_id: str,
     data: dict,
+    request: Request = None,
     payload=Depends(require_role([Role.ADMIN])),
     db: Session = Depends(get_db),
 ):

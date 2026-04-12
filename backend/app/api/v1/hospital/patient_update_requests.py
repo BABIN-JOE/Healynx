@@ -108,6 +108,7 @@ def list_profile_update_requests(
 @router.post("/pending-profile-updates/{req_id}/approve")
 def approve_profile_update_request(
     req_id: str,
+    request: Request = None,
     payload=Depends(require_role([Role.HOSPITAL])),
     db = Depends(get_db)):
     hospital_id = payload.get("hospital_id")
@@ -143,6 +144,7 @@ def approve_profile_update_request(
 @router.post("/pending-profile-updates/{req_id}/decline")
 def decline_profile_update_request(
     req_id: str,
+    request: Request = None,
     payload=Depends(require_role([Role.HOSPITAL])),
     db = Depends(get_db)):
     hospital_id = payload.get("hospital_id")

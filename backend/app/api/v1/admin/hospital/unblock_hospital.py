@@ -16,6 +16,7 @@ router = APIRouter()
 def unblock_hospital(
     hospital_id: str,
     db = Depends(get_db),
+    request: Request = None,
     payload = Depends(require_role([Role.ADMIN]))):
     h = db.get(Hospital, hospital_id)
     if not h:
