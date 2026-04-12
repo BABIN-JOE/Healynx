@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Skeleton } from "../../../components/ui/skeleton";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import AdminService, { HospitalRequestSummary } from "../../../services/AdminService";
 
 export default function HospitalRequests() {
   const [requests, setRequests] = useState<HospitalRequestSummary[]>([]);
