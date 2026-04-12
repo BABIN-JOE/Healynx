@@ -155,6 +155,13 @@ const HospitalService = {
     );
     return data;
   },
+  /* =========================
+     CHANGE PASSWORD
+  ========================= */
+  async changePassword(payload: { old_password: string; new_password: string }) {
+    const res = await apiClient.post("/api/v1/hospital/change-password", payload);
+    return res.data;
+  },
 };
 
 export default HospitalService;

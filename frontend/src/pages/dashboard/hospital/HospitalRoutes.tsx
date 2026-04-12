@@ -42,6 +42,8 @@ export default function HospitalRoutes() {
 
         <Route path="profile-updates" element={<PendingProfileUpdates />} />
 
+        <Route path="settings" element={<HospitalSettings />} />
+
         <Route path="*" element={<Navigate to="/hospital" replace />} />
       </Route>
     </Routes>
