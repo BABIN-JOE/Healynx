@@ -80,6 +80,7 @@ class Settings:
 
         if self.IS_PRODUCTION and not self.COOKIE_SECURE:
             self.COOKIE_SECURE = True
+            self.COOKIE_SAMESITE = "none"
 
         if self.COOKIE_SAMESITE == "none" and not self.COOKIE_SECURE:
             self.COOKIE_SAMESITE = "lax"
