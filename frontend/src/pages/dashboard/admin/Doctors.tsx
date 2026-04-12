@@ -124,6 +124,8 @@ export default function Doctors() {
         <h1 className="text-3xl font-bold">Doctors</h1>
 
         <div className="flex gap-2">
+          <Button onClick={() => navigate("/admin/doctor-requests")}>Doctor Requests</Button>
+
           <Button
             variant={showBlocked ? "default" : "secondary"}
             onClick={() => setShowBlocked(!showBlocked)}
@@ -230,12 +232,7 @@ export default function Doctors() {
                       <Button
                         variant="destructive"
                         size="icon"
-                        onClick={async () => {
-                          if (!confirm("Delete doctor?")) return;
-                          await AdminService.deleteDoctor(d.id);
-                          toast.success("Deleted");
-                          loadDoctors();
-                        }}
+                        onClick={() => handleDelete(d.id)}
                       >
                         <TrashIcon className="h-4 w-4" />
                       </Button>
