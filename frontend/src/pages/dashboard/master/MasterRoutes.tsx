@@ -8,6 +8,7 @@ import AdminList from "./AdminList";
 import AdminCreate from "./AdminCreate";
 import AdminEdit from "./AdminEdit";
 import AdminView from "./AdminView";
+import MasterSettings from "./MasterSettings";
 
 export default function MasterRoutes() {
   const links = [
@@ -28,6 +29,9 @@ export default function MasterRoutes() {
         <Route path="admins/create" element={<AdminCreate />} />
         <Route path="admins/:id/edit" element={<AdminEdit />} />
         <Route path="admins/:id/view" element={<AdminView />} />
+
+        {/* SETTINGS */}
+        <Route path="settings" element={<MasterSettings />} />
 
       </Route>
     </Routes>

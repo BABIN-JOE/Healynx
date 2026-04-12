@@ -11,8 +11,9 @@ import DoctorJoinRequestView from "./DoctorJoinRequestView";
 import PatientAccessRequests from "./PatientAccessRequests";
 import PendingEntries from "./PendingEntries";
 import PendingProfileUpdates from "./PendingProfileUpdates";
+import HospitalSettings from "./HospitalSettings";
 
-import { Home, Users, UserPlus, FolderLock, FileClock } from "lucide-react";
+import { Home, Users, UserPlus, FolderLock, FileClock, Settings } from "lucide-react";
 
 const hospitalLinks = [
   { label: "Dashboard", to: "/hospital", icon: <Home className="h-5 w-5" /> },
@@ -21,6 +22,7 @@ const hospitalLinks = [
   { label: "Patient Access", to: "/hospital/patient-access", icon: <FolderLock className="h-5 w-5" /> },
   { label: "Pending Entries", to: "/hospital/pending-entries", icon: <FileClock className="h-5 w-5" /> },
   { label: "Profile Updates", to: "/hospital/profile-updates", icon: <FileClock className="h-5 w-5" /> },
+  { label: "Settings", to: "/hospital/settings", icon: <Settings className="h-5 w-5" /> },
 ];
 
 export default function HospitalRoutes() {

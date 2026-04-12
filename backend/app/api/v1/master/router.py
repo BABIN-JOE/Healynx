@@ -11,6 +11,7 @@ from .block_admin import router as block_router
 from .unblock_admin import router as unblock_router
 from .delete_admin import router as delete_router
 from .dashboard import router as dashboard_router
+from .change_password import router as change_password_router
 
 router = APIRouter(tags=["Master"])
 
@@ -24,3 +25,4 @@ router.include_router(block_router)
 router.include_router(unblock_router)
 router.include_router(delete_router)
 router.include_router(dashboard_router)
+router.include_router(change_password_router)

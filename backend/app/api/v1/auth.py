@@ -271,11 +271,18 @@ def admin_login(request: Request, credentials: LoginSchema, db: Session = Depend
     verify_rate_limit_login(request, identifier)
 
     user = crud.get_admin_by_username(db, credentials.username)
-    if not user or not security.verify_password(user.password_hash, credentials.password):
+    if not user:
         _issue_invalid_login(request, identifier)
 
-    # Check if admin is deleted or blocked
-    if not user.is_active or user.is_blocked:
+    # Check if admin is deleted
+    if not user.is_active:
+        _issue_invalid_login(request, identifier)
+
+    # Check if admin is blocked
+    if user.is_blocked:
+        raise HTTPException(status_code=403, detail="Account is blocked. Contact master administrator.")
+
+    if not security.verify_password(user.password_hash, credentials.password):
         _issue_invalid_login(request, identifier)
 
     clear_login_failures(request, identifier)

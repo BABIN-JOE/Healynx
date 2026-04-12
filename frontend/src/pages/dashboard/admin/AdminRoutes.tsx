@@ -25,7 +25,10 @@ import PatientCreate from "./PatientCreate";
 import PatientEdit from "./PatientEdit";
 import PatientView from "./PatientView";
 
-import { LayoutDashboard, Hospital, User, Users } from "lucide-react";
+// Settings
+import AdminSettings from "./AdminSettings";
+
+import { LayoutDashboard, Hospital, User, Users, Settings } from "lucide-react";
 
 export default function AdminRoutes() {
   const adminLinks = [
@@ -33,6 +36,7 @@ export default function AdminRoutes() {
     { label: "Hospitals", to: "/admin/hospitals", icon: <Hospital /> },
     { label: "Doctors", to: "/admin/doctors", icon: <User /> },
     { label: "Patients", to: "/admin/patients", icon: <Users /> },
+    { label: "Settings", to: "/admin/settings", icon: <Settings /> },
   ];
 
   return (
@@ -64,6 +68,9 @@ export default function AdminRoutes() {
         <Route path="patients/create" element={<PatientCreate />} />
         <Route path="patients/:patientId/edit" element={<PatientEdit />} />
         <Route path="patients/:patientId/view" element={<PatientView />} />
+
+        {/* SETTINGS */}
+        <Route path="settings" element={<AdminSettings />} />
       </Route>
     </Routes>
   );

@@ -467,4 +467,13 @@ export const DoctorService = {
     );
     return data;
   },
+
+  /* =========================
+     CHANGE PASSWORD
+  ========================= */
+
+  async changePassword(payload: { old_password: string; new_password: string }) {
+    const { data } = await apiClient.post("/api/v1/doctor/change-password", payload);
+    return data;
+  },
 };

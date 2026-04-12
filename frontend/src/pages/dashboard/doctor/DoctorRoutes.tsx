@@ -8,8 +8,9 @@ import DoctorJoinHospital from "./DoctorHospital";
 import DoctorPatientAccess from "./DoctorPatientAccess";
 import DoctorMedicalEntries from "./DoctorMedicalEntries";
 import DoctorPatientRecords from "./DoctorPatientRecords";
+import DoctorSettings from "./DoctorSettings";
 
-import { Home, FolderLock, FileText, Building2 } from "lucide-react";
+import { Home, FolderLock, FileText, Building2, Settings } from "lucide-react";
 
 const doctorLinks = [
   {
@@ -32,6 +33,11 @@ const doctorLinks = [
     to: "/doctor/medical-entries",
     icon: <FileText className="h-5 w-5" />,
   },
+  {
+    label: "Settings",
+    to: "/doctor/settings",
+    icon: <Settings className="h-5 w-5" />,
+  },
 ];
 
 export default function DoctorRoutes() {
@@ -51,6 +57,9 @@ export default function DoctorRoutes() {
         <Route path="medical-entries" element={<DoctorMedicalEntries />} />
 
         <Route path="patient-records/:patientId" element={<DoctorPatientRecords />}/>
+
+        {/* /doctor/settings */}
+        <Route path="settings" element={<DoctorSettings />} />
 
         {/* fallback */}
         <Route path="*" element={<Navigate to="/doctor" replace />} />

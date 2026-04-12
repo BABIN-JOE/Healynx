@@ -34,10 +34,11 @@ const MasterService = {
   },
 
   // ------------------------------------------
-  // GET FULL ADMIN DETAILS WITH STATS (NEW)
+  // CHANGE PASSWORD
   // ------------------------------------------
-  getAdminDetails(id: string) {
-    return api.get(`/api/v1/master/admins/${id}/details`);
+  changePassword(data: { old_password: string; new_password: string }) {
+    return api.post("/api/v1/master/settings/change-password", data);
+  },
   },
 
   // ------------------------------------------

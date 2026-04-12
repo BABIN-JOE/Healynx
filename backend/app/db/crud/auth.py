@@ -35,3 +35,20 @@ def update_hospital_password(
     session.refresh(hospital)   # ✅ good practice
 
     return hospital
+
+
+def update_master_password(
+    session: Session,
+    master_id: UUID,
+    new_hash: str
+):
+    master = session.get(models.Master, master_id)
+    if not master:
+        return None
+
+    master.password_hash = new_hash
+    session.add(master)
+    session.commit()
+    session.refresh(master)   # ✅ good practice
+
+    return master
