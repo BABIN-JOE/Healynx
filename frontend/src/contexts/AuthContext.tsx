@@ -39,7 +39,15 @@ const AuthContext = createContext<AuthContextType>({
 
 const LOGIN_SYNC_KEY = "healynx_login";
 const LOGOUT_SYNC_KEY = "healynx_logout";
+const SESSION_SYNC_KEY = "healynx_session";
 const INACTIVITY_LIMIT = 30 * 60 * 1000;
+
+function createSessionSyncKey(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<any | null>(null);
@@ -48,11 +56,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const hasLoaded = useRef(false);
   const inactivityTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const sessionKeyRef = useRef<string | null>(null);
 
   const clearAuthState = () => {
     clearClientAuthState();
     setUser(null);
     setRole(null);
+    sessionKeyRef.current = null;
+  };
+
+  const storeSessionKey = (key: string) => {
+    sessionKeyRef.current = key;
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(SESSION_SYNC_KEY, key);
+    }
   };
 
   const fetchCurrentUser = async () => {
@@ -72,6 +89,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       syncCsrfTokenFromCookies();
       setUser(sessionUser);
       setRole(sessionUser.role);
+      if (!sessionKeyRef.current) {
+        const existingKey = typeof window !== "undefined" ? window.localStorage.getItem(SESSION_SYNC_KEY) : null;
+        storeSessionKey(existingKey || createSessionSyncKey());
+      }
       return sessionUser;
     } catch {
       try {
@@ -104,6 +125,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const broadcastLogout = () => {
+    const sessionKey = sessionKeyRef.current || createSessionSyncKey();
+    window.localStorage.setItem(
+      LOGOUT_SYNC_KEY,
+      JSON.stringify({ sessionKey, timestamp: Date.now() })
+    );
+  };
+
   const verifySession = async () => {
     try {
       const sessionUser = await fetchCurrentUser();
@@ -130,10 +159,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (refreshedUser) {
           setUser(refreshedUser);
           setRole(refreshedUser.role);
+          if (!sessionKeyRef.current) {
+            const existingKey = typeof window !== "undefined" ? window.localStorage.getItem(SESSION_SYNC_KEY) : null;
+            storeSessionKey(existingKey || createSessionSyncKey());
+          }
         }
         return;
       } catch {
         clearAuthState();
+        broadcastLogout();
         window.location.replace("/");
       }
     }
@@ -207,7 +241,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const sessionUser = await loadSession();
-    window.localStorage.setItem(LOGIN_SYNC_KEY, Date.now().toString());
+    const sessionKey = createSessionSyncKey();
+    storeSessionKey(sessionKey);
+    window.localStorage.setItem(
+      LOGIN_SYNC_KEY,
+      JSON.stringify({ sessionKey, timestamp: Date.now() })
+    );
     return sessionUser;
   };
 
@@ -225,20 +264,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // The client state still needs to be cleared even if the server session is already gone.
     } finally {
       clearAuthState();
-      window.localStorage.setItem(LOGOUT_SYNC_KEY, Date.now().toString());
+      broadcastLogout();
       window.location.replace("/");
     }
   };
 
   useEffect(() => {
     const handleStorageChange = (event: StorageEvent) => {
+      if (!event.key || !event.newValue) {
+        return;
+      }
+
       if (event.key === LOGOUT_SYNC_KEY) {
+        try {
+          const payload = JSON.parse(event.newValue);
+          if (payload?.sessionKey && payload.sessionKey !== sessionKeyRef.current) {
+            return;
+          }
+        } catch {
+          // ignore malformed logout payloads
+        }
+
         clearAuthState();
         window.location.replace("/");
         return;
       }
 
       if (event.key === LOGIN_SYNC_KEY) {
+        try {
+          const payload = JSON.parse(event.newValue);
+          if (payload?.sessionKey) {
+            if (payload.sessionKey === sessionKeyRef.current) {
+              return;
+            }
+            storeSessionKey(payload.sessionKey);
+          }
+        } catch {
+          // ignore malformed login payloads
+        }
+
         void loadSession();
       }
     };
