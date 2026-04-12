@@ -17,7 +17,7 @@ def change_password(
     payload=Depends(require_role([Role.ADMIN])),
     db = Depends(get_db),
 ):
-    admin = db.get(AdminModel, payload["user_id"])
+    admin = db.get(AdminModel, payload["admin_id"])
 
     if not admin:
         raise HTTPException(404, "Admin not found")

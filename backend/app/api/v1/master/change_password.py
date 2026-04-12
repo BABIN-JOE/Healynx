@@ -18,7 +18,7 @@ def change_master_password(
     payload=Depends(require_role([Role.MASTER])),
     db = Depends(get_db),
 ):
-    master_id = payload["user_id"]
+    master_id = payload["master_id"]
 
     master = crud.get_master(db, master_id)
     if not master:
