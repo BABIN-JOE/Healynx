@@ -28,13 +28,15 @@ import PatientView from "./PatientView";
 // Settings
 import AdminSettings from "./AdminSettings";
 
-import { LayoutDashboard, Hospital, User, Users, Settings } from "lucide-react";
+import { LayoutDashboard, Hospital, User, Users, Settings, FileText } from "lucide-react";
 
 export default function AdminRoutes() {
   const adminLinks = [
     { label: "Dashboard", to: "/admin", icon: <LayoutDashboard /> },
     { label: "Hospitals", to: "/admin/hospitals", icon: <Hospital /> },
+    { label: "Hospital Requests", to: "/admin/hospital-requests", icon: <FileText /> },
     { label: "Doctors", to: "/admin/doctors", icon: <User /> },
+    { label: "Doctor Requests", to: "/admin/doctor-requests", icon: <FileText /> },
     { label: "Patients", to: "/admin/patients", icon: <Users /> },
     { label: "Settings", to: "/admin/settings", icon: <Settings /> },
   ];

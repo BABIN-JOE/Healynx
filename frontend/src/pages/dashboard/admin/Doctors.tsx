@@ -20,13 +20,6 @@ import { Input } from "../../../components/ui/input";
 import { Badge } from "../../../components/ui/badge";
 
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "../../../components/ui/dialog";
-
-import {
   EyeIcon,
   TrashIcon,
   LockIcon,
@@ -39,12 +32,10 @@ export default function Doctors() {
   const navigate = useNavigate();
 
   const [doctors, setDoctors] = useState<any[]>([]);
-  const [requests, setRequests] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
 
   const [showBlocked, setShowBlocked] = useState(false);
-  const [openRequests, setOpenRequests] = useState(false);
 
   const PAGE_SIZE = 10;
   const [page, setPage] = useState(1);
@@ -64,19 +55,6 @@ export default function Doctors() {
       toast.error("Failed to load doctors");
     } finally {
       setLoading(false);
-    }
-  };
-
-  /* ===========================================================
-       FETCH DOCTOR REQUESTS
-  =========================================================== */
-  const loadRequests = async () => {
-    try {
-      const res = await AdminService.getDoctorRequests("pending");
-
-      setRequests(res || []);
-    } catch (err) {
-      toast.error("Failed to load doctor requests");
     }
   };
 
@@ -134,31 +112,6 @@ export default function Doctors() {
     }
   };
 
-  const handleApprove = async (id: string) => {
-    const request = requests.find(r => r.id === id);
-    const name = request?.name || 'Doctor';
-    try {
-      await AdminService.approveDoctor(id);
-      toast.success(`${name} approved successfully`);
-
-      loadDoctors(!showBlocked);
-      loadRequests();
-    } catch {
-      toast.error("Approve failed");
-    }
-  };
-
-  const handleReject = async (id: string) => {
-    try {
-      await AdminService.rejectDoctor(id);
-      toast.success("Doctor rejected");
-
-      loadRequests();
-    } catch {
-      toast.error("Reject failed");
-    }
-  };
-
   /* ===========================================================
        JSX
   =========================================================== */
@@ -171,15 +124,6 @@ export default function Doctors() {
         <h1 className="text-3xl font-bold">Doctors</h1>
 
         <div className="flex gap-2">
-          <Button
-            onClick={() => {
-              loadRequests();
-              setOpenRequests(true);
-            }}
-          >
-            Doctor Requests
-          </Button>
-
           <Button
             variant={showBlocked ? "default" : "secondary"}
             onClick={() => setShowBlocked(!showBlocked)}
@@ -319,52 +263,6 @@ export default function Doctors() {
           Next
         </Button>
       </div>
-
-      {/* REQUESTS MODAL */}
-      <Dialog open={openRequests} onOpenChange={setOpenRequests}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Doctor Requests</DialogTitle>
-          </DialogHeader>
-
-          {requests.length === 0 ? (
-            <p className="mt-3 text-gray-500">No pending requests</p>
-          ) : (
-            <div className="mt-4 space-y-4">
-              {requests.map((r) => (
-                <div key={r.id} className="border p-4 rounded-md">
-                  <p className="font-semibold">{r.full_name}</p>
-                  <p className="text-sm text-gray-600">
-                    License: {r.license_number}
-                  </p>
-
-                  <div className="flex gap-2 mt-3">
-                    <Button size="sm" onClick={() => handleApprove(r.id)}>
-                      Approve
-                    </Button>
-
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => handleReject(r.id)}
-                    >
-                      Reject
-                    </Button>
-
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => navigate(`/admin/doctor-requests/${r.id}/view`)}
-                    >
-                      View
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </>
   );
 }
