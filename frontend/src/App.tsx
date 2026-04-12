@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./contexts/AuthContext";
 import { getRoleHomePath } from "./auth/roleRoutes";
@@ -38,6 +39,22 @@ function SessionLoadingScreen() {
 
 export default function App() {
   const { role, loading } = useAuth();
+  const [showLoginFallback, setShowLoginFallback] = useState(false);
+
+  useEffect(() => {
+    if (!loading) {
+      setShowLoginFallback(false);
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setShowLoginFallback(true);
+    }, 2000);
+
+    return () => window.clearTimeout(timer);
+  }, [loading]);
+
+  const showLogin = !role && (!loading || showLoginFallback);
 
   return (
     <>
@@ -45,7 +62,7 @@ export default function App() {
       <Route
         path="/"
         element={
-          loading ? (
+          loading && !showLogin ? (
             <SessionLoadingScreen />
           ) : role ? (
             <RedirectByRole role={role} />
