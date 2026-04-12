@@ -37,8 +37,7 @@ const MasterService = {
   // CHANGE PASSWORD
   // ------------------------------------------
   changePassword(data: { old_password: string; new_password: string }) {
-    return api.post("/api/v1/master/settings/change-password", data);
-  },
+    return api.post("/api/v1/master/change-password", data);
   },
 
   // ------------------------------------------

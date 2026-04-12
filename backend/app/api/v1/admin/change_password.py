@@ -1,19 +1,19 @@
 #api/v1/admin/change_password.py
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Body
 from sqlmodel import Session
 
 from app.deps import get_db
 from app.core.rbac import require_role, Role
-from app.core import security
+from app.core import crypto
 from app.db.models import Admin as AdminModel
 
 router = APIRouter()
 
 @router.post("/change-password")
 def change_password(
-    old_password: str,
-    new_password: str,
+    old_password: str = Body(..., embed=True),
+    new_password: str = Body(..., embed=True),
     payload=Depends(require_role([Role.ADMIN])),
     db = Depends(get_db),
 ):
@@ -22,10 +22,17 @@ def change_password(
     if not admin:
         raise HTTPException(404, "Admin not found")
 
-    if not security.verify_password(admin.password_hash, old_password):
-        raise HTTPException(401, "Invalid current password")
+    if not crypto.verify_password(old_password, admin.password_hash):
+        raise HTTPException(400, "Old password is incorrect")
 
-    admin.password_hash = security.hash_password(new_password)
+    if old_password == new_password:
+        raise HTTPException(400, "New password cannot be same as old password")
+
+    if len(new_password) < 8:
+        raise HTTPException(400, "Password must be at least 8 characters")
+
+    admin.password_hash = crypto.hash_password(new_password)
+    db.add(admin)
     db.commit()
 
-    return {"message": "Password changed"}
+    return {"message": "Password updated successfully"}
