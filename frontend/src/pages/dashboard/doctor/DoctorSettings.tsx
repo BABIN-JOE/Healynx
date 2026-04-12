@@ -7,7 +7,7 @@ import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { Label } from "../../../components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
-import DoctorService from "../../../services/DoctorService";
+import { DoctorService } from "../../../services/DoctorService";
 
 export default function DoctorSettings() {
   const [loading, setLoading] = useState(false);
