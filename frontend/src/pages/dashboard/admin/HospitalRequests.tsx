@@ -18,7 +18,8 @@ export default function HospitalRequests() {
   const loadRequests = async () => {
     try {
       setLoading(true);
-      const data = await AdminService.getHospitalRequests(statusFilter);
+      const status = statusFilter === "all" ? undefined : statusFilter;
+      const data = await AdminService.getHospitalRequests(status);
       setRequests(data);
     } catch (err) {
       console.error(err);
@@ -66,7 +67,7 @@ export default function HospitalRequests() {
               <SelectItem value="pending">Pending</SelectItem>
               <SelectItem value="approved">Approved</SelectItem>
               <SelectItem value="rejected">Rejected</SelectItem>
-              <SelectItem value="">All</SelectItem>
+              <SelectItem value="all">All</SelectItem>
             </SelectContent>
           </Select>
         </CardHeader>
