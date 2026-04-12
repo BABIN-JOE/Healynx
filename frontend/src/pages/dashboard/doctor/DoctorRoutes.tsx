@@ -1,7 +1,7 @@
 // src/pages/dashboard/doctor/DoctorRoutes.tsx
 
 import { Routes, Route, Navigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import DashboardLayout from "../layout/DashboardLayout";
 
 import DoctorDashboard from "./DoctorDashboard";
@@ -24,6 +24,8 @@ export default function DoctorRoutes() {
 
   useEffect(() => {
     checkHospitalStatus();
+    const interval = setInterval(checkHospitalStatus, 15000);
+    return () => clearInterval(interval);
   }, []);
 
   const checkHospitalStatus = async () => {
@@ -36,6 +38,12 @@ export default function DoctorRoutes() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleHospitalStatusChange = (
+    status: { mapped: boolean; hospital?: any }
+  ) => {
+    setHospitalStatus(status);
   };
 
   // Component to protect routes that require hospital membership
@@ -63,64 +71,87 @@ export default function DoctorRoutes() {
     return <>{children}</>;
   };
 
-  const doctorLinks = [
-    {
-      label: "Dashboard",
-      to: "/doctor",
-      icon: <Home className="h-5 w-5" />,
-    },
-    {
-      label: "Hospital",
-      to: "/doctor/join-hospital",
-      icon: <Building2 className="h-5 w-5" />,
-    },
-    {
-      label: "Patient Access",
-      to: "/doctor/patient-access",
-      icon: <FolderLock className="h-5 w-5" />,
-      disabled: !hospitalStatus?.mapped,
-    },
-    {
-      label: "Medical Entries",
-      to: "/doctor/medical-entries",
-      icon: <FileText className="h-5 w-5" />,
-      disabled: !hospitalStatus?.mapped,
-    },
-    {
-      label: "Settings",
-      to: "/doctor/settings",
-      icon: <Settings className="h-5 w-5" />,
-    },
-  ];
+  const doctorLinks = useMemo(
+    () => [
+      {
+        label: "Dashboard",
+        to: "/doctor",
+        icon: <Home className="h-5 w-5" />,
+      },
+      {
+        label: "Hospital",
+        to: "/doctor/join-hospital",
+        icon: <Building2 className="h-5 w-5" />,
+      },
+      {
+        label: "Patient Access",
+        to: "/doctor/patient-access",
+        icon: <FolderLock className="h-5 w-5" />,
+        disabled: !hospitalStatus?.mapped,
+      },
+      {
+        label: "Medical Entries",
+        to: "/doctor/medical-entries",
+        icon: <FileText className="h-5 w-5" />,
+        disabled: !hospitalStatus?.mapped,
+      },
+      {
+        label: "Settings",
+        to: "/doctor/settings",
+        icon: <Settings className="h-5 w-5" />,
+      },
+    ],
+    [hospitalStatus]
+  );
 
   return (
     <Routes>
       <Route element={<DashboardLayout links={doctorLinks} />}>
         {/* /doctor */}
-        <Route index element={<DoctorDashboard />} />
+        <Route
+          index
+          element={<DoctorDashboard hospitalStatus={hospitalStatus} />}
+        />
 
         {/* /doctor/join-hospital */}
-        <Route path="join-hospital" element={<DoctorJoinHospital />} />
+        <Route
+          path="join-hospital"
+          element={
+            <DoctorJoinHospital
+              hospitalStatus={hospitalStatus}
+              onHospitalStatusChange={handleHospitalStatusChange}
+            />
+          }
+        />
 
         {/* /doctor/patient-access */}
-        <Route path="patient-access" element={
-          <ProtectedRoute>
-            <DoctorPatientAccess />
-          </ProtectedRoute>
-        } />
+        <Route
+          path="patient-access"
+          element={
+            <ProtectedRoute>
+              <DoctorPatientAccess />
+            </ProtectedRoute>
+          }
+        />
 
         {/* /doctor/medical-entries */}
-        <Route path="medical-entries" element={
-          <ProtectedRoute>
-            <DoctorMedicalEntries />
-          </ProtectedRoute>
-        } />
+        <Route
+          path="medical-entries"
+          element={
+            <ProtectedRoute>
+              <DoctorMedicalEntries />
+            </ProtectedRoute>
+          }
+        />
 
-        <Route path="patient-records/:patientId" element={
-          <ProtectedRoute>
-            <DoctorPatientRecords />
-          </ProtectedRoute>
-        } />
+        <Route
+          path="patient-records/:patientId"
+          element={
+            <ProtectedRoute>
+              <DoctorPatientRecords />
+            </ProtectedRoute>
+          }
+        />
 
         {/* /doctor/settings */}
         <Route path="settings" element={<DoctorSettings />} />

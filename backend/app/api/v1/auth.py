@@ -253,6 +253,9 @@ def master_login(request: Request, credentials: LoginSchema, db: Session = Depen
         _issue_invalid_login(request, identifier)
 
     clear_login_failures(request, identifier)
+    session_crud.revoke_all_user_sessions(db, user_id=user.id)
+    refresh_crud.revoke_all_user_tokens(db, user_id=user.id)
+
     session_id = str(uuid4())
     payload = {
         "role": "master",
@@ -284,6 +287,9 @@ def admin_login(request: Request, credentials: LoginSchema, db: Session = Depend
         raise HTTPException(status_code=403, detail="Your account is blocked. Please contact support.")
 
     clear_login_failures(request, identifier)
+    session_crud.revoke_all_user_sessions(db, user_id=user.id)
+    refresh_crud.revoke_all_user_tokens(db, user_id=user.id)
+
     session_id = str(uuid4())
     payload = {
         "role": "admin",
@@ -314,6 +320,9 @@ def hospital_login(
         _issue_invalid_login(request, identifier)
 
     clear_login_failures(request, identifier)
+    session_crud.revoke_all_user_sessions(db, hospital_id=hospital.id)
+    refresh_crud.revoke_all_user_tokens(db, hospital_id=hospital.id)
+
     session_id = str(uuid4())
     payload = {
         "role": "hospital",
@@ -340,6 +349,9 @@ def doctor_login(request: Request, credentials: LoginSchema, db: Session = Depen
         _issue_invalid_login(request, identifier)
 
     clear_login_failures(request, identifier)
+    session_crud.revoke_all_user_sessions(db, doctor_id=doctor.id)
+    refresh_crud.revoke_all_user_tokens(db, doctor_id=doctor.id)
+
     session_id = str(uuid4())
     payload = {
         "role": "doctor",

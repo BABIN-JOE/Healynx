@@ -2,7 +2,13 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import api from "../../../api/apiClient";
 
-export default function DoctorJoinHospital() {
+export default function DoctorJoinHospital({
+  hospitalStatus,
+  onHospitalStatusChange,
+}: {
+  hospitalStatus?: { mapped: boolean; hospital?: any } | null;
+  onHospitalStatusChange?: (status: { mapped: boolean; hospital?: any }) => void;
+}) {
 
   const [license, setLicense] = useState("");
   const [loading, setLoading] = useState(false);
@@ -13,19 +19,32 @@ export default function DoctorJoinHospital() {
     checkHospital();
   }, []);
 
+  useEffect(() => {
+    if (hospitalStatus !== undefined && !checking) {
+      if (hospitalStatus?.mapped) {
+        setHospital(hospitalStatus.hospital);
+      } else {
+        setHospital(null);
+      }
+    }
+  }, [hospitalStatus, checking]);
+
   async function checkHospital() {
     try {
       const { data } = await api.get("/api/v1/doctor/my-hospital");
 
       if (data?.mapped) {
         setHospital(data.hospital);
+        onHospitalStatusChange?.(data);
       } else {
         setHospital(null);
+        onHospitalStatusChange?.({ mapped: false });
       }
 
     } catch (err) {
       console.error(err);
       setHospital(null);
+      onHospitalStatusChange?.({ mapped: false });
     } finally {
       setChecking(false);
     }
@@ -56,6 +75,7 @@ export default function DoctorJoinHospital() {
       await api.post("/api/v1/doctor/leave-hospital");
       toast.success("Left hospital successfully");
       setHospital(null);
+      onHospitalStatusChange?.({ mapped: false });
     } catch (err: any) {
       toast.error("Failed to leave hospital");
     }

@@ -31,13 +31,26 @@ def normalize(dt):
 
 def get_doctor_pending_history(db: Session, doctor_id) -> List:
     """
-    Returns all pending-related entries created by doctor.
-    Automatically marks expired if approval window passed.
-    Visible to doctor for 72 hours.
+    Returns pending-related entries created by doctor and visible for 72 hours.
+    Only shows entries from the doctor's current active hospital membership.
     """
 
     doctor_id = UUID(str(doctor_id))
 
+    current_mapping = db.exec(
+        select(models.HospitalDoctorMap)
+        .where(
+            models.HospitalDoctorMap.doctor_id == doctor_id,
+            models.HospitalDoctorMap.soft_deleted == False,
+            models.HospitalDoctorMap.is_active == True,
+        )
+        .order_by(models.HospitalDoctorMap.added_at.desc())
+    ).first()
+
+    if not current_mapping:
+        return []
+
+    current_hospital_id = current_mapping.hospital_id
     now = normalize(utcnow())
     visibility_limit = now - timedelta(hours=72)
 
@@ -58,7 +71,8 @@ def get_doctor_pending_history(db: Session, doctor_id) -> List:
             select(model)
             .where(
                 model.doctor_id == doctor_id,
-                model.created_at >= visibility_limit
+                model.hospital_id == current_hospital_id,
+                model.created_at >= visibility_limit,
             )
             .order_by(model.created_at.desc())
         ).all()

@@ -6,7 +6,11 @@ import { Separator } from "../../../components/ui/separator";
 import { FileText, FolderLock, Building2, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "../../../components/ui/alert";
 
-export default function DoctorDashboard() {
+export default function DoctorDashboard({
+  hospitalStatus,
+}: {
+  hospitalStatus?: { mapped: boolean; hospital?: { id: string; name: string; license_number: string } } | null;
+}) {
 
   const [stats, setStats] = useState({
     patient_access_requests: 0,
@@ -26,8 +30,20 @@ export default function DoctorDashboard() {
 
   useEffect(() => {
     loadStats();
-    checkHospitalStatus();
+    if (hospitalStatus === undefined || hospitalStatus === null) {
+      checkHospitalStatus();
+    } else {
+      setHospitalInfo(hospitalStatus);
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    if (hospitalStatus !== undefined && hospitalStatus !== null) {
+      setHospitalInfo(hospitalStatus);
+      setLoading(false);
+    }
+  }, [hospitalStatus]);
 
   async function loadStats() {
     try {
