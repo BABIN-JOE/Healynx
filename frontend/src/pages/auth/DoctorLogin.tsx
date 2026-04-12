@@ -22,8 +22,10 @@ export default function DoctorLogin() {
     setLoading(true);
 
     try {
-      await login("doctor", form);
-      toast.success("Doctor logged in!");
+      const sessionUser = await login("doctor", form);
+      toast.success(
+        `Doctor ${sessionUser?.name || sessionUser?.username || form.username} logged in!`
+      );
       navigate(getRoleHomePath("doctor"), { replace: true });
     } catch (err: any) {
       toast.error(err?.response?.data?.detail || "Invalid credentials");

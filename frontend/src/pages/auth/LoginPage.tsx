@@ -28,18 +28,22 @@ export default function LoginPage() {
 
     try {
       if (activeTab === "hospital") {
-        await login("hospital", {
+        const sessionUser = await login("hospital", {
           license_number: form.license_number,
           password: form.password,
         });
-        toast.success("Hospital logged in!");
+        toast.success(
+          `Hospital ${sessionUser?.hospital_name || form.license_number} logged in!`
+        );
         navigate(getRoleHomePath("hospital"), { replace: true });
       } else {
-        await login("doctor", {
+        const sessionUser = await login("doctor", {
           username: form.username,
           password: form.password,
         });
-        toast.success("Doctor logged in!");
+        toast.success(
+          `Doctor ${sessionUser?.name || sessionUser?.username || form.username} logged in!`
+        );
         navigate(getRoleHomePath("doctor"), { replace: true });
       }
     } catch (err: any) {

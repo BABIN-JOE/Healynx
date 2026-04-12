@@ -103,6 +103,7 @@ export default function Hospitals({
     try {
       await AdminService.deleteHospital(id);
       toast.success("Hospital deleted");
+      setHospitals((prev) => prev.filter((hospital) => hospital.id !== id));
       loadHospitals(!showBlocked);
     } catch {
       toast.error("Delete failed");
@@ -113,6 +114,7 @@ export default function Hospitals({
     try {
       await AdminService.blockHospital(id);
       toast.success("Hospital blocked");
+      setHospitals((prev) => prev.filter((hospital) => hospital.id !== id));
       loadHospitals(!showBlocked);
     } catch {
       toast.error("Block failed");
@@ -123,6 +125,7 @@ export default function Hospitals({
     try {
       await AdminService.unblockHospital(id);
       toast.success("Hospital unblocked");
+      setHospitals((prev) => prev.filter((hospital) => hospital.id !== id));
       loadHospitals(!showBlocked);
     } catch {
       toast.error("Unblock failed");

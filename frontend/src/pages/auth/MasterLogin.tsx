@@ -21,8 +21,10 @@ export default function MasterLogin() {
     setLoading(true);
 
     try {
-      await login("master", form);
-      toast.success("Master logged in!");
+      const sessionUser = await login("master", form);
+      toast.success(
+        `Master ${sessionUser?.name || sessionUser?.username || form.username} logged in!`
+      );
       navigate(getRoleHomePath("master"), { replace: true });
     } catch (err: any) {
       toast.error(err?.response?.data?.detail || "Invalid credentials");

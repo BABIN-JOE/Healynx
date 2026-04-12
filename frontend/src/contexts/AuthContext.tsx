@@ -25,7 +25,7 @@ interface AuthContextType {
   login: (
     role: "master" | "admin" | "hospital" | "doctor",
     credentials: any
-  ) => Promise<void>;
+  ) => Promise<any | null>;
   logout: () => Promise<void>;
 }
 
@@ -171,8 +171,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // If CSRF endpoint fails, just proceed with what we have
     }
 
-    await loadSession();
+    const sessionUser = await loadSession();
     window.localStorage.setItem(LOGIN_SYNC_KEY, Date.now().toString());
+    return sessionUser;
   };
 
   const logout = async () => {

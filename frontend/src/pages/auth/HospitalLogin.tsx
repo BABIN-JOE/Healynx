@@ -22,8 +22,10 @@ export default function HospitalLogin() {
     setLoading(true);
 
     try {
-      await login("hospital", form);
-      toast.success("Hospital logged in!");
+      const sessionUser = await login("hospital", form);
+      toast.success(
+        `Hospital ${sessionUser?.hospital_name || sessionUser?.license_number || form.license_number} logged in!`
+      );
       navigate(getRoleHomePath("hospital"), { replace: true });
     } catch (err: any) {
       toast.error(err?.response?.data?.detail || "Invalid credentials");

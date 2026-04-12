@@ -21,8 +21,10 @@ export default function AdminLogin() {
     setLoading(true);
 
     try {
-      await login("admin", form);
-      toast.success("Admin logged in!");
+      const sessionUser = await login("admin", form);
+      toast.success(
+        `Admin ${sessionUser?.name || sessionUser?.username || form.username} logged in!`
+      );
       navigate(getRoleHomePath("admin"), { replace: true });
     } catch (err: any) {
       toast.error(err?.response?.data?.detail || "Invalid credentials");

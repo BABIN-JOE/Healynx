@@ -106,6 +106,7 @@ export default function Doctors() {
     try {
       await AdminService.deleteDoctor(id);
       toast.success("Doctor deleted");
+      setDoctors((prev) => prev.filter((doctor) => doctor.id !== id));
       loadDoctors(!showBlocked);
     } catch {
       toast.error("Delete failed");
@@ -122,6 +123,7 @@ export default function Doctors() {
         toast.success("Doctor unblocked");
       }
 
+      setDoctors((prev) => prev.filter((doctor) => doctor.id !== id));
       loadDoctors(!showBlocked);
     } catch {
       toast.error("Action failed");
@@ -260,7 +262,7 @@ export default function Doctors() {
                         <Button
                           size="icon"
                           className="bg-red-500 hover:bg-red-600"
-                          onClick={() => AdminService.blockDoctor(d.id).then(() => loadDoctors())}
+                          onClick={() => toggleBlock(d.id, true)}
                         >
                           <LockIcon className="h-4 w-4" />
                         </Button>
@@ -268,7 +270,7 @@ export default function Doctors() {
                         <Button
                           size="icon"
                           className="bg-green-500 hover:bg-green-600"
-                          onClick={() => AdminService.unblockDoctor(d.id).then(() => loadDoctors())}
+                          onClick={() => toggleBlock(d.id, false)}
                         >
                           <UnlockIcon className="h-4 w-4" />
                         </Button>
