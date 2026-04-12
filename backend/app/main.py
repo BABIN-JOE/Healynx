@@ -3,7 +3,7 @@ import time
 from collections import defaultdict, deque
 from typing import Dict
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlmodel import SQLModel, Session
