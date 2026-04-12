@@ -40,7 +40,8 @@ export default function App() {
   const { role, loading } = useAuth();
 
   return (
-    <Routes>
+    <>
+      <Routes>
       <Route
         path="/"
         element={
@@ -101,5 +102,6 @@ export default function App() {
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
     <Toaster />
+    </>
   );
 }
