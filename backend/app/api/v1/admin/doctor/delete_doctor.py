@@ -21,17 +21,16 @@ def delete_doctor(
     if not doctor:
         raise HTTPException(404, "Doctor not found")
 
-    doctor.is_active = False
-    db.add(doctor)
+    db.delete(doctor)
     db.commit()
 
     log_action(
         db,
-        action_type="admin.soft_delete_doctor",
+        action_type="admin.hard_delete_doctor",
         user_role="admin",
         user_id=payload["admin_id"],
         target_entity="doctors",
         target_entity_id=doctor.id
     )
 
-    return {"message": "Doctor removed"}
+    return {"message": "Doctor deleted permanently"}

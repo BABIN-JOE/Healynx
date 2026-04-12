@@ -21,17 +21,16 @@ def delete_hospital(
     if not hospital:
         raise HTTPException(404, "Hospital not found")
 
-    hospital.is_active = False
-    db.add(hospital)
+    db.delete(hospital)
     db.commit()
 
     log_action(
         db,
-        action_type="admin.soft_delete_hospital",
+        action_type="admin.hard_delete_hospital",
         user_role="admin",
         user_id=payload["admin_id"],
         target_entity="hospitals",
         target_entity_id=hospital.id
     )
 
-    return {"message": "Hospital removed"}
+    return {"message": "Hospital deleted permanently"}
