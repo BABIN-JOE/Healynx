@@ -18,7 +18,7 @@ type JoinReq = {
   first_name: string;
   last_name: string;
   license_number: string;
-  created_at?: string;
+  submitted_at?: string;
 };
 
 const POLL_MS = 10_000;
@@ -43,7 +43,13 @@ const DoctorJoinRequests: React.FC = () => {
     setError(null);
     try {
       const data = await HospitalService.getJoinRequests();
-      setRequests(Array.isArray(data) ? data : []);
+      const requestsData = Array.isArray(data) ? data : [];
+      requestsData.sort((a, b) => {
+        const aTime = a.submitted_at ? new Date(a.submitted_at).getTime() : 0;
+        const bTime = b.submitted_at ? new Date(b.submitted_at).getTime() : 0;
+        return bTime - aTime;
+      });
+      setRequests(requestsData);
     } catch (err: any) {
       console.error("Load join requests failed", err);
       setError(err?.message || "Failed to load requests");
@@ -129,8 +135,8 @@ const DoctorJoinRequests: React.FC = () => {
               </TableCell>
               <TableCell>{req.license_number}</TableCell>
               <TableCell>
-                {req.created_at
-                  ? new Date(req.created_at).toLocaleString()
+                {req.submitted_at
+                  ? new Date(req.submitted_at).toLocaleString()
                   : "-"}
               </TableCell>
               <TableCell className="space-x-2">

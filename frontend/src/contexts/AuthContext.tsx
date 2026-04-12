@@ -104,6 +104,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const verifySession = async () => {
+    try {
+      const sessionUser = await fetchCurrentUser();
+      syncCsrfTokenFromCookies();
+      if (sessionUser) {
+        setUser(sessionUser);
+        setRole(sessionUser.role);
+      }
+      return;
+    } catch {
+      try {
+        syncCsrfTokenFromCookies();
+        await api.get("/api/v1/auth/csrf", {
+          withCredentials: true,
+        });
+        syncCsrfTokenFromCookies();
+        await api.post(
+          "/api/v1/auth/refresh",
+          {},
+          { withCredentials: true }
+        );
+        const refreshedUser = await fetchCurrentUser();
+        syncCsrfTokenFromCookies();
+        if (refreshedUser) {
+          setUser(refreshedUser);
+          setRole(refreshedUser.role);
+        }
+        return;
+      } catch {
+        clearAuthState();
+        window.location.replace("/");
+      }
+    }
+  };
+
   const resetStaleBrowserSession = async () => {
     syncCsrfTokenFromCookies();
 
@@ -245,6 +280,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       events.forEach((eventName) => {
         window.removeEventListener(eventName, resetTimer);
       });
+    };
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+
+    const interval = window.setInterval(() => {
+      void verifySession();
+    }, 10000);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        void verifySession();
+      }
+    };
+
+    window.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [user]);
 
