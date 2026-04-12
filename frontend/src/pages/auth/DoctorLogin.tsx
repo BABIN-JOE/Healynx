@@ -1,6 +1,6 @@
 ﻿import React, { useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 
 import { getRoleHomePath } from "../../auth/roleRoutes";
 import { useAuth } from "../../contexts/AuthContext";
@@ -24,7 +24,7 @@ export default function DoctorLogin() {
     try {
       const sessionUser = await login("doctor", form);
       toast.success(
-        `Doctor ${sessionUser?.name || sessionUser?.username || form.username} logged in!`
+        `Doctor ${sessionUser?.name || sessionUser?.username || form.username} logged in successfully!`
       );
       navigate(getRoleHomePath("doctor"), { replace: true });
     } catch (err: any) {

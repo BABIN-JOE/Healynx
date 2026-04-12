@@ -101,11 +101,13 @@ export default function Doctors() {
        ACTION HANDLERS
   =========================================================== */
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this doctor?")) return;
+    const doctor = doctors.find(d => d.id === id);
+    const name = doctor?.name || 'Doctor';
+    if (!confirm(`Delete ${name}?`)) return;
 
     try {
       await AdminService.deleteDoctor(id);
-      toast.success("Doctor deleted");
+      toast.success(`${name} deleted successfully`);
       setDoctors((prev) => prev.filter((doctor) => doctor.id !== id));
       loadDoctors(!showBlocked);
     } catch {
@@ -114,13 +116,15 @@ export default function Doctors() {
   };
 
   const toggleBlock = async (id: string, isActive: boolean) => {
+    const doctor = doctors.find(d => d.id === id);
+    const name = doctor?.name || 'Doctor';
     try {
       if (isActive) {
         await AdminService.blockDoctor(id);
-        toast.success("Doctor blocked");
+        toast.success(`${name} blocked successfully`);
       } else {
         await AdminService.unblockDoctor(id);
-        toast.success("Doctor unblocked");
+        toast.success(`${name} unblocked successfully`);
       }
 
       setDoctors((prev) => prev.filter((doctor) => doctor.id !== id));
@@ -131,9 +135,11 @@ export default function Doctors() {
   };
 
   const handleApprove = async (id: string) => {
+    const request = requests.find(r => r.id === id);
+    const name = request?.name || 'Doctor';
     try {
       await AdminService.approveDoctor(id);
-      toast.success("Doctor approved");
+      toast.success(`${name} approved successfully`);
 
       loadDoctors(!showBlocked);
       loadRequests();

@@ -1,5 +1,3 @@
-#app\api\v1\admin\patient\update_patient.py
-
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlmodel import Session
 import json
@@ -19,6 +17,7 @@ router = APIRouter()
 def update_patient(
     patient_id: str,
     data: dict,
+    request: Request,
     payload=Depends(require_role([Role.ADMIN])),
     db = Depends(get_db),
 ):

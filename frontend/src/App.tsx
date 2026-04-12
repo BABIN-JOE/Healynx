@@ -18,6 +18,8 @@ import AdminRoutes from "./pages/dashboard/admin/AdminRoutes";
 import HospitalRoutes from "./pages/dashboard/hospital/HospitalRoutes";
 import DoctorRoutes from "./pages/dashboard/doctor/DoctorRoutes";
 
+import { Toaster } from "sonner";
+
 function RedirectByRole({ role }: { role: string | null }) {
   if (!role) {
     return <Navigate to="/" replace />;
@@ -98,5 +100,6 @@ export default function App() {
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    <Toaster />
   );
 }

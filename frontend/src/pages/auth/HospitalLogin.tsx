@@ -1,6 +1,6 @@
 ﻿import React, { useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 
 import { getRoleHomePath } from "../../auth/roleRoutes";
 import { useAuth } from "../../contexts/AuthContext";
@@ -24,7 +24,7 @@ export default function HospitalLogin() {
     try {
       const sessionUser = await login("hospital", form);
       toast.success(
-        `Hospital ${sessionUser?.hospital_name || sessionUser?.license_number || form.license_number} logged in!`
+        `Hospital ${sessionUser?.hospital_name || sessionUser?.license_number || form.license_number} logged in successfully!`
       );
       navigate(getRoleHomePath("hospital"), { replace: true });
     } catch (err: any) {

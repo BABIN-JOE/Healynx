@@ -113,7 +113,7 @@ export default function DoctorPatientAccess() {
 
       await DoctorService.requestPatientAccess(aadhaar);
 
-      toast.success("Access request sent to hospital");
+      toast.success("Access request sent successfully");
 
       setShowModal(false);
       setAadhaar("");

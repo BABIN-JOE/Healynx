@@ -99,10 +99,12 @@ export default function Hospitals({
         ACTIONS
   ============================== */
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this hospital?")) return;
+    const hospital = hospitals.find(h => h.id === id);
+    const name = hospital?.name || 'Hospital';
+    if (!confirm(`Delete ${name}?`)) return;
     try {
       await AdminService.deleteHospital(id);
-      toast.success("Hospital deleted");
+      toast.success(`${name} deleted successfully`);
       setHospitals((prev) => prev.filter((hospital) => hospital.id !== id));
       loadHospitals(!showBlocked);
     } catch {
@@ -111,9 +113,11 @@ export default function Hospitals({
   };
 
   const handleBlock = async (id: string) => {
+    const hospital = hospitals.find(h => h.id === id);
+    const name = hospital?.name || 'Hospital';
     try {
       await AdminService.blockHospital(id);
-      toast.success("Hospital blocked");
+      toast.success(`${name} blocked successfully`);
       setHospitals((prev) => prev.filter((hospital) => hospital.id !== id));
       loadHospitals(!showBlocked);
     } catch {
@@ -122,9 +126,11 @@ export default function Hospitals({
   };
 
   const handleUnblock = async (id: string) => {
+    const hospital = hospitals.find(h => h.id === id);
+    const name = hospital?.name || 'Hospital';
     try {
       await AdminService.unblockHospital(id);
-      toast.success("Hospital unblocked");
+      toast.success(`${name} unblocked successfully`);
       setHospitals((prev) => prev.filter((hospital) => hospital.id !== id));
       loadHospitals(!showBlocked);
     } catch {
@@ -133,9 +139,11 @@ export default function Hospitals({
   };
 
   const handleApprove = async (id: string) => {
+    const request = requests.find(r => r.id === id);
+    const name = request?.name || 'Hospital';
     try {
       await AdminService.approveHospital(id);
-      toast.success("Hospital approved");
+      toast.success(`${name} approved successfully`);
       loadRequests();
       loadHospitals(!showBlocked);
     } catch {
