@@ -82,13 +82,23 @@ def create_pending_entry(
     # ---------------- SURGERY ----------------
     elif entry_type == "surgery":
 
+        parent_surgery_id = data.get("parent_surgery_id")
+        surgery_date = data.get("surgery_date")
+
+        # For new surgeries (not followups), surgery_date is required
+        if not parent_surgery_id and not surgery_date:
+            raise HTTPException(
+                status_code=400,
+                detail="surgery_date is required for new surgeries"
+            )
+
         pending = create_surgery_pending(
             db=db,
             patient_id=patient_id,
             doctor_id=doctor_id,
             hospital_id=hospital_id,
 
-            parent_surgery_id=data.get("parent_surgery_id"),
+            parent_surgery_id=parent_surgery_id,
 
             surgery_name=data.get("surgery_name"),
             body_part=data.get("body_part"),
@@ -96,7 +106,7 @@ def create_pending_entry(
             description=data.get("description"),
             notes=data.get("notes"),
 
-            surgery_date=data.get("surgery_date"),
+            surgery_date=surgery_date,
             admit_date=data.get("admit_date"),
             discharge_date=data.get("discharge_date"),
 

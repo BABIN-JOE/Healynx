@@ -23,7 +23,7 @@ class SurgeryPending(SQLModel, table=True):
     description: Optional[str] = None
     notes: Optional[str] = None
 
-    surgery_date: datetime
+    surgery_date: Optional[datetime] = None
     admit_date: Optional[datetime] = None
     discharge_date: Optional[datetime] = None
 

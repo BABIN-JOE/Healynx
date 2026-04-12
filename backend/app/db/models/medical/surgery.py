@@ -26,7 +26,7 @@ class Surgery(SQLModel, table=True):
     notes: Optional[str] = None
 
     # Dates
-    surgery_date: datetime
+    surgery_date: Optional[datetime] = None
     admit_date: Optional[datetime] = None
     discharge_date: Optional[datetime] = None
 
