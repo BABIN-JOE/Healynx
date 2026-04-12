@@ -3,8 +3,13 @@ import time
 from collections import defaultdict, deque
 from typing import Dict
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+
+try:
+    from fastapi.exceptions import HTTPException
+except ImportError:
+    from starlette.exceptions import HTTPException
 from fastapi.responses import JSONResponse
 from sqlmodel import SQLModel, Session
 
@@ -101,6 +106,12 @@ async def csrf_protection_middleware(request: Request, call_next):
                 verify_csrf_tokens_direct(request, db)
         except HTTPException as e:
             return JSONResponse(status_code=e.status_code, content={"detail": e.detail})
+        except Exception:
+            logger.exception("Unexpected CSRF middleware failure")
+            return JSONResponse(
+                status_code=403,
+                content={"detail": "CSRF verification failed"},
+            )
 
     return await call_next(request)
 
