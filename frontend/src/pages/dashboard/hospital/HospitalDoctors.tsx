@@ -11,7 +11,7 @@ import {
 } from "../../../components/ui/table";
 import { Input } from "../../../components/ui/input";
 import { useNavigate } from "react-router-dom";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 
 type DoctorMap = {
   doctor_id: string;

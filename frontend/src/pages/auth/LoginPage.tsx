@@ -1,6 +1,6 @@
 ﻿import React, { useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 
 import { getRoleHomePath } from "../../auth/roleRoutes";
 import { useAuth } from "../../contexts/AuthContext";

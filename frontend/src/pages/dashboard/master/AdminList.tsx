@@ -28,7 +28,7 @@ import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 
 import { motion } from "framer-motion";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 
 export default function AdminList() {
   const navigate = useNavigate();

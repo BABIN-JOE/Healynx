@@ -14,7 +14,7 @@ import {
   CardContent,
 } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 
 export default function HospitalView() {
   const { hospitalId } = useParams();

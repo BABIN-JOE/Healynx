@@ -6,7 +6,7 @@ import HospitalService from "../../../services/HospitalService";
 import { Card, CardHeader, CardTitle, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { ArrowLeftIcon } from "../../../components/Icons";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 
 export default function DoctorJoinRequestView() {
   const { reqId } = useParams();

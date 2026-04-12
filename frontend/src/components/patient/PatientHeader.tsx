@@ -4,7 +4,7 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Pencil } from "lucide-react";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 import { DoctorService } from "../../services/DoctorService";
 
 interface Props {

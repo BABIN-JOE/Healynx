@@ -7,7 +7,7 @@ import MasterService from "../../../services/MasterService";
 
 import { ArrowLeftIcon } from "../../../components/Icons";
 import { motion } from "framer-motion";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 
 // shadcn UI
 import { Button } from "../../../components/ui/button";

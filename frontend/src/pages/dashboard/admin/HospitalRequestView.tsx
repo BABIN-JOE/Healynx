@@ -6,7 +6,7 @@ import AdminService from "../../../services/AdminService";
 import { Card, CardHeader, CardTitle, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { ArrowLeftIcon } from "../../../components/Icons";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 
 export default function HospitalRequestView() {
   const { id } = useParams();

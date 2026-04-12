@@ -11,7 +11,7 @@ import {
   TableHead,
   TableHeader,
 } from "../../../components/ui/table";
-import { toast } from "react-hot-toast";
+import { toast } from "sonner";
 
 type AccessReq = {
   id: string;

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import AdminService from "../../../services/AdminService";
 import { ArrowLeftIcon } from "../../../components/Icons";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import { motion } from "framer-motion";
 
 import {

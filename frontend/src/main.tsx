@@ -4,13 +4,11 @@ import App from "./App";
 import "./index.css";
 import { HashRouter } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
-import { Toaster } from "react-hot-toast";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <HashRouter>
     <AuthProvider>
       <App />
-      <Toaster position="top-right" />
     </AuthProvider>
   </HashRouter>
 );
