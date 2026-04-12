@@ -78,6 +78,9 @@ class Settings:
         if self.COOKIE_SAMESITE not in {"lax", "strict", "none"}:
             self.COOKIE_SAMESITE = "none" if self.COOKIE_SECURE else "lax"
 
+        if self.IS_PRODUCTION and not self.COOKIE_SECURE:
+            self.COOKIE_SECURE = True
+
         if self.COOKIE_SAMESITE == "none" and not self.COOKIE_SECURE:
             self.COOKIE_SAMESITE = "lax"
 

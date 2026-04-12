@@ -44,11 +44,22 @@ def hash_token(token: str) -> str:
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
 
-def _auth_cookie_kwargs(*, httponly: bool) -> dict:
+def _is_secure_request(request: Request) -> bool:
+    proto = request.headers.get("x-forwarded-proto", "").split(",")[0].strip().lower()
+    return proto == "https" or request.url.scheme == "https"
+
+
+def _auth_cookie_kwargs(*, httponly: bool, secure: bool | None = None) -> dict:
+    use_secure = settings.COOKIE_SECURE if secure is None else secure
+    if settings.COOKIE_SAMESITE == "none" and not use_secure:
+        cookie_samesite = "lax"
+    else:
+        cookie_samesite = settings.COOKIE_SAMESITE
+
     return {
         "httponly": httponly,
-        "secure": settings.COOKIE_SECURE,
-        "samesite": settings.COOKIE_SAMESITE,
+        "secure": use_secure,
+        "samesite": cookie_samesite,
         "path": "/",
     }
 
@@ -77,27 +88,27 @@ def _clear_auth_cookies(response: Response) -> None:
     _delete_cookie(response, CSRF_COOKIE)
 
 
-def set_auth_cookie(response: Response, role: str, token: str) -> None:
+def set_auth_cookie(response: Response, role: str, token: str, secure: bool | None = None) -> None:
     response.set_cookie(
         key=COOKIE_MAP[role],
         value=token,
-        **_auth_cookie_kwargs(httponly=True),
+        **_auth_cookie_kwargs(httponly=True, secure=secure),
     )
 
 
-def set_refresh_cookie(response: Response, token: str) -> None:
+def set_refresh_cookie(response: Response, token: str, secure: bool | None = None) -> None:
     response.set_cookie(
         key=REFRESH_COOKIE,
         value=token,
-        **_auth_cookie_kwargs(httponly=True),
+        **_auth_cookie_kwargs(httponly=True, secure=secure),
     )
 
 
-def set_csrf_cookie(response: Response, csrf_token: str) -> None:
+def set_csrf_cookie(response: Response, csrf_token: str, secure: bool | None = None) -> None:
     response.set_cookie(
         key=CSRF_COOKIE,
         value=csrf_token,
-        **_auth_cookie_kwargs(httponly=False),
+        **_auth_cookie_kwargs(httponly=False, secure=secure),
     )
 
 
@@ -205,22 +216,23 @@ def issue_tokens(
         **user_ids,
     )
 
+    secure_cookie = _is_secure_request(request)
     _clear_role_cookies(response)
-    set_auth_cookie(response, role, access_token)
-    set_refresh_cookie(response, refresh_token)
-    set_csrf_cookie(response, csrf_token)
+    set_auth_cookie(response, role, access_token, secure=secure_cookie)
+    set_refresh_cookie(response, refresh_token, secure=secure_cookie)
+    set_csrf_cookie(response, csrf_token, secure=secure_cookie)
     response.headers["X-CSRF-Token"] = csrf_token
 
 
 @router.get("/me")
-def me(payload=Depends(get_current_user), db: Session = Depends(get_db)):
+def me(request: Request, payload=Depends(get_current_user), db: Session = Depends(get_db)):
     response = JSONResponse(content=payload)
     session_id = payload.get("session_id")
 
     if session_id:
         session = session_crud.get_session(db, session_id)
         if session and not session.revoked:
-            set_csrf_cookie(response, session.csrf_token)
+            set_csrf_cookie(response, session.csrf_token, secure=_is_secure_request(request))
             response.headers["X-CSRF-Token"] = session.csrf_token
 
     return response
@@ -238,7 +250,7 @@ def get_csrf(request: Request, db: Session = Depends(get_db)):
 
     response = JSONResponse(content={"csrf_token": session.csrf_token})
     # Ensure token is set as accessible cookie (httpOnly=False) and header
-    set_csrf_cookie(response, session.csrf_token)
+    set_csrf_cookie(response, session.csrf_token, secure=_is_secure_request(request))
     response.headers["X-CSRF-Token"] = session.csrf_token
     return response
 
