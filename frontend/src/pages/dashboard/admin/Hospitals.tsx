@@ -15,13 +15,6 @@ import { Input } from "../../../components/ui/input";
 import { Badge } from "../../../components/ui/badge";
 
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "../../../components/ui/dialog";
-
-import {
   EyeIcon,
   LockIcon,
   UnlockIcon,
@@ -41,12 +34,10 @@ export default function Hospitals({
   const navigate = useNavigate();
 
   const [hospitals, setHospitals] = useState<any[]>([]);
-  const [requests, setRequests] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
 
   const [showBlocked, setShowBlocked] = useState<boolean>(showBlockedOverride);
-  const [openRequests, setOpenRequests] = useState(false);
 
   const PAGE_SIZE = 10;
   const [page, setPage] = useState(1);
@@ -72,15 +63,6 @@ export default function Hospitals({
   /* =============================
         LOAD REQUESTS
   ============================== */
-  const loadRequests = async () => {
-    try {
-      const data = await AdminService.getHospitalRequests("pending");
-      setRequests(data || []);
-    } catch {
-      toast.error("Failed to load hospital requests");
-    }
-  };
-
   useEffect(() => {
     loadHospitals(!showBlocked);
   }, [showBlocked]);
@@ -138,29 +120,6 @@ export default function Hospitals({
     }
   };
 
-  const handleApprove = async (id: string) => {
-    const request = requests.find(r => r.id === id);
-    const name = request?.name || 'Hospital';
-    try {
-      await AdminService.approveHospital(id);
-      toast.success(`${name} approved successfully`);
-      loadRequests();
-      loadHospitals(!showBlocked);
-    } catch {
-      toast.error("Approve failed");
-    }
-  };
-
-  const handleReject = async (id: string) => {
-    try {
-      await AdminService.rejectHospital(id);
-      toast.success("Hospital rejected");
-      loadRequests();
-    } catch {
-      toast.error("Reject failed");
-    }
-  };
-
   /* =============================
               UI
   ============================== */
@@ -172,14 +131,7 @@ export default function Hospitals({
         <h1 className="text-2xl font-bold">Hospitals</h1>
 
         <div className="flex gap-2">
-          <Button
-            onClick={() => {
-              loadRequests();
-              setOpenRequests(true);
-            }}
-          >
-            Hospital Requests
-          </Button>
+          <Button onClick={() => navigate("/admin/hospital-requests")}>Hospital Requests</Button>
 
           <Button
             variant={showBlocked ? "default" : "secondary"}
@@ -310,53 +262,6 @@ export default function Hospitals({
         </Button>
       </div>
 
-      {/* REQUESTS MODAL */}
-      <Dialog open={openRequests} onOpenChange={setOpenRequests}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Hospital Requests</DialogTitle>
-          </DialogHeader>
-
-          {requests.length === 0 ? (
-            <p className="mt-4">No pending requests</p>
-          ) : (
-            <div className="mt-4 space-y-4">
-              {requests.map((r) => (
-                <div key={r.id} className="border p-4 rounded-md">
-                  <p className="font-semibold">{r.hospital_name}</p>
-                  <p className="text-sm text-gray-600">
-                    License: {r.license_number}
-                  </p>
-
-                  <div className="flex gap-2 mt-3">
-                    <Button size="sm" onClick={() => handleApprove(r.id)}>
-                      Approve
-                    </Button>
-
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => handleReject(r.id)}
-                    >
-                      Reject
-                    </Button>
-
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() =>
-                        navigate(`/admin/hospital-requests/${r.id}/view`)
-                      }
-                    >
-                      View
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </>
   );
 }

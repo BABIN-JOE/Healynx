@@ -28,7 +28,7 @@ def delete_patient(
         db,
         action_type="admin.delete_patient",
         user_role="admin",
-        user_id=payload["user_id"],
+        user_id=payload["admin_id"],
         target_entity="patients",
         target_entity_id=patient_id
     )

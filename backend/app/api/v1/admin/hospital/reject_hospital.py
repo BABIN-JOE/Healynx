@@ -30,7 +30,7 @@ def reject_hospital(
         raise HTTPException(400, "Invalid request status for rejection")
 
     ok = crud.reject_hospital_request(
-        db, req_id, reviewed_by_admin_id=payload["user_id"]
+        db, req_id, reviewed_by_admin_id=payload["admin_id"]
     )
 
     if not ok:
@@ -40,7 +40,7 @@ def reject_hospital(
         db,
         action_type="admin.reject_hospital",
         user_role="admin",
-        user_id=payload["user_id"],
+        user_id=payload["admin_id"],
         target_entity="hospital_requests",
         target_entity_id=req_id
     )

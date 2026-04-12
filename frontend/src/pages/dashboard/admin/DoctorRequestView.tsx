@@ -42,7 +42,7 @@ export default function DoctorRequestView() {
   if (!data) return <p className="p-4 text-red-600">Request not found.</p>;
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="mx-auto max-w-7xl p-6 space-y-6">
       {/* HEADER */}
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Doctor Request Details</h1>

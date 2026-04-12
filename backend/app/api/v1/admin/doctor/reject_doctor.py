@@ -31,7 +31,7 @@ def reject_doctor(
         raise HTTPException(400, "Admin can only reject pending doctor requests")
 
     ok = crud.reject_doctor_request(
-        db, req_id, reviewed_by_admin_id=payload["user_id"]
+        db, req_id, reviewed_by_admin_id=payload["admin_id"]
     )
 
     if not ok:
@@ -41,7 +41,7 @@ def reject_doctor(
         db,
         action_type="admin.reject_doctor",
         user_role="admin",
-        user_id=payload["user_id"],
+        user_id=payload["admin_id"],
         target_entity="doctor_requests",
         target_entity_id=req_id
     )
