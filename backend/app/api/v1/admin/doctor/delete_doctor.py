@@ -5,7 +5,7 @@ from sqlmodel import Session
 
 from app.deps import get_db
 from app.core.rbac import require_role, Role
-from app.db.models import Allergy, Immunization, Lab, LongTermCondition, Surgery, Visit, Doctor
+from app.db.models import Allergy, Immunization, LabResult, LongTermCondition, Surgery, Visit, Doctor
 from app.core.audit import log_action
 
 router = APIRouter()
