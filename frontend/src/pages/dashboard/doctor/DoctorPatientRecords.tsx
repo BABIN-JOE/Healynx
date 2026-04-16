@@ -171,25 +171,19 @@ export default function DoctorPatientRecords() {
   }, [remaining]);
 
   // =========================================================
-  // FALLBACK POLLING (KEEP AS SAFETY)
+  // FALLBACK POLLING (DISABLED - USER CAN MANUALLY REFRESH)
   // =========================================================
-  useEffect(() => {
-
-    const interval = setInterval(async () => {
-
-      const list = await DoctorService.getApprovedPatientAccess();
-
-      const match = list.find((p: any) => p.patient_id === patientId);
-
-      if (!match || (match.view_expires_in ?? 0) <= 0) {
-        navigate("/doctor/patient-access");
-      }
-
-    }, 15000);
-
-    return () => clearInterval(interval);
-
-  }, [patientId]);
+  // Auto-polling disabled to prevent constant refreshing
+  // useEffect(() => {
+  //   const interval = setInterval(async () => {
+  //     const list = await DoctorService.getApprovedPatientAccess();
+  //     const match = list.find((p: any) => p.patient_id === patientId);
+  //     if (!match || (match.view_expires_in ?? 0) <= 0) {
+  //       navigate("/doctor/patient-access");
+  //     }
+  //   }, 15000);
+  //   return () => clearInterval(interval);
+  // }, [patientId]);
 
   return (
 

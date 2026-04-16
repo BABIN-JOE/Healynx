@@ -60,15 +60,14 @@ export default function DoctorPatientAccess() {
      🔁 BACKEND REVALIDATION (AUTO REMOVE AFTER EXPIRY)
      ========================================================= */
 
-  useEffect(() => {
+  // Auto-refresh disabled - user can manually refresh if needed
+  // useEffect(() => {
+  //   const interval = setInterval(() => {
+  //     loadApprovedPatients();
+  //   }, 30000); // refresh from backend every 30 sec
 
-    const interval = setInterval(() => {
-      loadApprovedPatients();
-    }, 30000); // refresh from backend every 30 sec
-
-    return () => clearInterval(interval);
-
-  }, []);
+  //   return () => clearInterval(interval);
+  // }, []);
 
   /* =========================================================
      ⏱ FRONTEND COUNTDOWN TIMER
@@ -174,9 +173,14 @@ export default function DoctorPatientAccess() {
           Patient Access
         </h1>
 
-        <Button onClick={() => setShowModal(true)}>
-          Request Access
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={loadApprovedPatients} disabled={loadingList}>
+            Refresh
+          </Button>
+          <Button onClick={() => setShowModal(true)}>
+            Request Access
+          </Button>
+        </div>
 
       </div>
 
