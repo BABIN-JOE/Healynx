@@ -352,9 +352,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    const interval = window.setInterval(() => {
-      void verifySession();
-    }, 10000);
+    // Session verification polling disabled to prevent auto-refreshing
+    // const interval = window.setInterval(() => {
+    //   void verifySession();
+    // }, 10000);
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
@@ -365,7 +366,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
-      window.clearInterval(interval);
+      // window.clearInterval(interval);
       window.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [user]);
