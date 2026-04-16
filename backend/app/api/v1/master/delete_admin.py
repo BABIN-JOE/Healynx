@@ -7,7 +7,7 @@ from sqlmodel import Session
 from app.deps import get_db
 from app.core.rbac import Role
 from app.deps_auth import require_role
-from app.db.models import Admin, Hospital
+from app.db.models import Admin, Doctor, Hospital
 
 router = APIRouter()
 
@@ -21,12 +21,16 @@ def delete_admin(
     if not admin:
         raise HTTPException(404, "Admin not found")
 
-    # Clear the approved_by reference from all hospitals before deleting
-    # This removes the foreign key constraint that would prevent deletion
+    # Clear the approved_by reference from all hospitals and doctors before deleting.
+    # This removes foreign key constraints that would otherwise prevent deletion.
     hospitals = db.query(Hospital).filter(Hospital.approved_by == admin_id).all()
     for hospital in hospitals:
         hospital.approved_by = None
-    
+
+    doctors = db.query(Doctor).filter(Doctor.approved_by == admin_id).all()
+    for doctor in doctors:
+        doctor.approved_by = None
+
     # Hard delete - remove admin from database completely
     db.delete(admin)
     db.commit()
