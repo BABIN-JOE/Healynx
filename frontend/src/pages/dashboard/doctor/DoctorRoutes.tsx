@@ -24,8 +24,9 @@ export default function DoctorRoutes() {
 
   useEffect(() => {
     checkHospitalStatus();
-    const interval = setInterval(checkHospitalStatus, 15000);
-    return () => clearInterval(interval);
+    // Auto-polling disabled to prevent constant refreshing
+    // const interval = setInterval(checkHospitalStatus, 15000);
+    // return () => clearInterval(interval);
   }, []);
 
   const checkHospitalStatus = async () => {

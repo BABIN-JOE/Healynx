@@ -43,7 +43,8 @@ const ProfileUpdateRequests: React.FC = () => {
 
   useEffect(() => {
     load();
-    pollRef.current = window.setInterval(load, POLL_MS);
+    // Auto-polling disabled to prevent constant refreshing
+    // pollRef.current = window.setInterval(load, POLL_MS);
     return () => {
       if (pollRef.current) window.clearInterval(pollRef.current);
     };

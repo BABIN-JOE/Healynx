@@ -61,7 +61,8 @@ const DoctorJoinRequests: React.FC = () => {
 
   useEffect(() => {
     loadRequests();
-    pollRef.current = window.setInterval(loadRequests, POLL_MS);
+    // Auto-polling disabled to prevent constant refreshing
+    // pollRef.current = window.setInterval(loadRequests, POLL_MS);
     return () => {
       if (pollRef.current) window.clearInterval(pollRef.current);
     };
