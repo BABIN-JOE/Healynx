@@ -453,6 +453,33 @@ These are useful to know if you continue developing the project:
 6. Seed the master account.
 7. Log in as master and create your first admin.
 
+## Publication
+
+This project is based on research published on SSRN:
+
+**Healynx: A Secure, Privacy-First, AI-Enabled Lifetime Medical Data Management System**
+- **Paper Link:** [https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6476598](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6476598)
+- **Year:** 2026
+
+### Citation
+
+If you use Healynx in your research or project, please cite the associated paper:
+
+```bibtex
+@article{healynx2026,
+  title={Healynx: A Secure, Privacy-First, AI-Enabled Lifetime Medical Data Management System},
+  author={Babin Joe},
+  journal={SSRN},
+  year={2026},
+  url={https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6476598}
+}
+```
+
+**APA Citation:**
+> Babin Joe. (2026). Healynx: A secure, privacy-first, AI-enabled lifetime medical data management system. *SSRN*. Retrieved from https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6476598
+
+For machine-readable citation metadata, see [`CITATION.cff`](CITATION.cff).
+
 ## License
 
 This Project is registered under Apache License.

@@ -1,0 +1,30 @@
+cff-version: 1.2.0
+message: "If you use Healynx in your research or work, please cite it as below."
+type: software
+title: "Healynx: A Secure, Privacy-First, AI-Enabled Lifetime Medical Data Management System"
+version: 1.0.0
+date-released: 2026-03-27
+url: "https://github.com/BABIN-JOE/Healynx"
+repository-code: "https://github.com/BABIN-JOE/Healynx"
+repository-artifact: "https://github.com/BABIN-JOE/Healynx"
+license: Apache-2.0
+description: "Healynx is a privacy-first healthcare platform designed to manage electronic health records using encryption, role-based access control, and AI-driven summarization, enabling secure data sharing and efficient, informed clinical decision-making."
+keywords:
+  - medical-records
+  - healthcare
+  - role-based-access-control
+  - encryption
+  - fastapi
+  - react
+contact:
+  - given-names: "Babin Joe"
+    email: "babinjoe2945@gmail.com"
+references:
+  - type: paper
+    title: "Healynx: A Secure, Privacy-First, AI-Enabled Lifetime Medical Data Management System"
+    authors:
+      - given-names: "Babin Joe"
+    journal: "SSRN"
+    year: 2026
+    url: "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=6476598"
+preference: "To cite this software, please cite the associated paper when applicable."
